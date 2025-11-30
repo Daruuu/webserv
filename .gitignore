@@ -86,3 +86,7 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+# Webserver
+webserver
+/local
+/build
