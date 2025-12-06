@@ -8,6 +8,9 @@
 #include <iostream>
 #include <stdexcept>
 #include <cstring>
+#include <sstream>
+#include <cerrno>
+
 
 TcpListener::TcpListener() : listenFd_(-1), isBound_(false) {
 }
@@ -138,11 +141,16 @@ void TcpListener::bindAndListen(const std::string& host, int port)
 	hints.ai_socktype = SOCK_STREAM;  // TCP (no UDP)
 	hints.ai_flags = AI_PASSIVE;      // Para servidor
 	
-	// Paso 2: Convertir el puerto de número a string
+	// Convertir el puerto de número a string
 	// getaddrinfo necesita el puerto como string, no como número
-	std::string portStr = std::to_string(port);
-	
-	// Paso 3: Preparar el hostname
+
+	std::ostringstream oss;
+	oss << port;
+	std::string portStr = oss.str();
+
+
+
+	// Preparar el hostname
 	// Si host está vacío, usamos NULL (significa "todas las interfaces")
 	// Si host tiene valor, usamos ese valor
 	const char *hostname = NULL;
@@ -150,12 +158,12 @@ void TcpListener::bindAndListen(const std::string& host, int port)
 		hostname = host.c_str();
 	}
 	
-	// Paso 4: Llamar a getaddrinfo
+	// Llamar a getaddrinfo
 	// Esta función hace la "magia": convierte el hostname/IP a una estructura
 	// que el socket puede usar
 	int status = getaddrinfo(hostname, portStr.c_str(), &hints, &result);
 	
-	// Paso 5: Verificar si funcionó
+	// Verificar si funcionó
 	// Si status != 0, hubo un error
 	if (status != 0) {
 		close(listenFd_);
@@ -166,7 +174,7 @@ void TcpListener::bindAndListen(const std::string& host, int port)
 		throw std::runtime_error(errorMsg);
 	}
 	
-	// Paso 6: Usar el resultado para hacer bind
+	// Usar el resultado para hacer bind
 	// getaddrinfo nos da una estructura con la dirección lista para usar
 	// Solo necesitamos pasarla a bind()
 	if (bind(listenFd_, result->ai_addr, result->ai_addrlen) == -1) {
@@ -177,7 +185,7 @@ void TcpListener::bindAndListen(const std::string& host, int port)
 		throw std::runtime_error("Failed to bind socket");
 	}
 	
-	// Paso 7: Liberar la memoria que getaddrinfo asignó
+	// Liberar la memoria que getaddrinfo asignó
 	// IMPORTANTE: Siempre hay que liberar con freeaddrinfo
 	freeaddrinfo(result);
 	
@@ -292,7 +300,7 @@ int TcpListener::acceptConnection() {
 		fcntl(clientFd, F_SETFL, flags | O_NONBLOCK);
 	}
 	
-	// Mostrar información del cliente (opcional, para debugging)
+	// Mostrar información del cliente (opcional)
 	char clientIp[INET_ADDRSTRLEN];
 	inet_ntop(AF_INET, &clientAddr.sin_addr, clientIp, INET_ADDRSTRLEN);
 	std::cout << "New client connected from " << clientIp << std::endl;
