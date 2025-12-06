@@ -30,7 +30,10 @@ BIN_DIR		= bin
 BUILD_DIR	= build
 INCLUDE 	= -I$(SRC_DIR) -Iinclude
 
-SRC_FILES = $(SRC_DIR)/main.cpp 
+SRC_FILES = $(SRC_DIR)/main.cpp \
+			$(SRC_DIR)/network/EpollWrapper.cpp \
+			$(SRC_DIR)/network/TcpListener.cpp \
+			$(SRC_DIR)/network/ServerManager.cpp 
 
 
 #OBJ_FILES = $(SRC_FILES:%.cpp=$(BUILD_DIR)/%.o) # works with vpath

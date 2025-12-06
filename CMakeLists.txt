@@ -3,4 +3,12 @@ project(webserv)
 
 set(CMAKE_CXX_STANDARD 98)
 
-add_executable(webserv main.cpp)
+# Source files
+set(SOURCES
+	src/main.cpp
+	src/network/EpollWrapper.cpp
+	src/network/TcpListener.cpp
+	src/network/ServerManager.cpp
+)
+
+add_executable(webserv ${SOURCES})
