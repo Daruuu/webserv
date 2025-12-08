@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.0)
+cmake_minimum_required(VERSION 3.10)
 project(webserv
     VERSION 0.1.0
         DESCRIPTION ""
@@ -16,4 +16,11 @@ add_compile_options(-Wall -Wextra -Werror)
 add_executable(webserv
         src/main.cpp
 )
-add_executable(test-socket docs/allowed_functions/TestServer.cpp)
+
+add_executable(test-socket
+        docs/allowed_functions/TestServer.cpp
+)
+
+add_executable(parsing
+        src/config/mainConfig.cpp
+)
