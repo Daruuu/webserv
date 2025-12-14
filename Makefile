@@ -25,13 +25,18 @@ CXX			= c++
 CXXFLAGS	= -Wall -Wextra -Werror -std=c++98 -pedantic -Wshadow
 LDFLAGS		=
 
+# the idea is use this variable to find the default config file : [default.conf]
+#ROOT_DIR_PROJECT := $(shell pwd)
+# Añadimos la definición con comillas para que sea un string válido en C++
+#CXXFLAGS += -DROOT_DIR_PROJECT=\"$(CURRENT_DIR)\"
+
 SRC_DIR		= src
 BIN_DIR		= bin
 BUILD_DIR	= build
 INCLUDE 	= -I$(SRC_DIR) -Iinclude
 
-SRC_FILES = $(SRC_DIR)/main.cpp 
-
+//SRC_FILES = $(SRC_DIR)/main.cpp 
+SRC_FILES = $(SRC_DIR)/config/mainConfig.cpp 
 
 #OBJ_FILES = $(SRC_FILES:%.cpp=$(BUILD_DIR)/%.o) # works with vpath
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRC_FILES))
