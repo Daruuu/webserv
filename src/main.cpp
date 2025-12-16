@@ -1,6 +1,7 @@
 #include <exception>
 #include <iostream>
 #include <csignal>
+#include "config/ConfigParser.hpp"
 
 int main(int argc, char* argv[])
 {

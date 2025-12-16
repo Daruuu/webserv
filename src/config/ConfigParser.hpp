@@ -1,32 +1,41 @@
 #ifndef WEBSERV_CONFIGPARSER_HPP
 #define WEBSERV_CONFIGPARSER_HPP
 
-#include <map>
 #include <string>
 #include <vector>
 
 class ServerConfig;
+class LocationConfig;
 
-class ConfigParser {
+class ConfigParser
+{
+public:
+	ConfigParser();
+	explicit ConfigParser(const std::string& configFile);
+	~ConfigParser();
 
-    private:
-        std::string configFile_;
-		unsigned int serversCount_;
-        std::vector<ServerConfig> servers_;
-        std::vector<std::string> rawServerBlocks_;
+	void parse();
+	const std::vector<ServerConfig>& getServers() const;
+	size_t getServerCount() const;
 
-		bool validateExtensionAndPermissionsFile(const std::string& file);
-		bool checkIfFileHasValidContent(const std::string& file);
-		void extractBlocksOfEachServer(const std::string& file);
-		void parse();
+private:
 
-    public:
-        ConfigParser();
-        ConfigParser(const std::string& configFile);
-		ConfigParser(const ConfigParser& other);
-		ConfigParser& operator=(const ConfigParser& other);
+	std::string configFile_;
+	size_t serversCount_;
+	std::vector<std::string> rawServerBlocks_;
+	std::vector<ServerConfig> servers_;
 
-        ~ConfigParser();
+	//	constructors of copy and operator
+	ConfigParser(const ConfigParser& other);
+	ConfigParser& operator=(const ConfigParser& other);
+
+	bool validateExtensionAndPermissionsFile() const;
+	bool checkIfFileHasValidContent(const std::string& configFile) const;
+	std::string readFileContent();
+	void extractServerblocks(const std::string& content);
+	void parserServerBlocks();
+	ServerConfig parseServerBlock(const std::string& block);
+	LocationConfig parseLocationBlock(const std::string& block);
 };
 
 //ostream

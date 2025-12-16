@@ -21,7 +21,12 @@ add_executable(test-socket
 
 #add_source(src/config)
 add_executable(parsing
+#        src/main.cpp
         src/config/mainConfig.cpp
         src/config/ConfigParser.hpp
         src/config/ConfigParser.cpp
+        src/config/ConfigException.hpp
+        src/config/ConfigException.cpp
+        src/config/ConfigException.cpp
+        src/config/ConfigException.hpp
 )
