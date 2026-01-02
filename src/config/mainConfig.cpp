@@ -8,7 +8,6 @@
 #include "ConfigParser.hpp"
 #include "ConfigException.hpp"
 
-
 /**
  * returns 0 on success, -1 on error
  * F_OK: check for existence
@@ -31,6 +30,7 @@ int main(int argc, char* argv[])
 	try
 	{
 		ConfigParser parser(configPath);
+		std::cout << "Config file: [" << parser.getConfigFile() << "]\n";
 		parser.parse();
 
 		// Get parsed servers
@@ -57,7 +57,6 @@ int main(int argc, char* argv[])
 		std::cerr << "Error: " << e.what() << std::endl;
 		return 1;
 	}
-
 	std::flush(std::cout);
 	return 0;
 }

@@ -34,16 +34,16 @@ void ConfigParser::parse()
 	{
 		throw ConfigException(error::cannot_open_file + configFilePath_);
 	}
-	if (validateBasicContent() == true)
-	{
-		std::cout << "FILE IS VALID LINES.\n";
-	}
-	else
+	if (!validateBasicContent())
 	{
 		std::cout << "\nError open file :(\n";
 	}
 }
 
+std::string& ConfigParser::getConfigFile()
+{
+	return configFilePath_;
+}
 const std::vector<ServerConfig>& ConfigParser::getServers() const
 {
 	return servers_;

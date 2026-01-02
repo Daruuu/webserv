@@ -14,6 +14,7 @@ public:
 	~ConfigParser();
 
 	void parse();
+	std::string& getConfigFile();
 	const std::vector<ServerConfig>& getServers() const;
 	size_t getServerCount() const;
 
@@ -30,7 +31,7 @@ private:
 	bool validateFileExtension() const;
 	bool validateFilePermissions() const;
 	bool validateBasicContent() const;
-	std::string trim Line(std::string& line) const;
+	std::string trimLine(std::string& line) const;
 	std::string readFileContent() const;
 
 	void extractServerblocks(const std::string& content);
