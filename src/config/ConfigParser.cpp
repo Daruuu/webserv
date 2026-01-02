@@ -4,7 +4,7 @@
 #include <sstream>
 
 #include "ConfigException.hpp"
-#include "../common/constants.hpp"
+#include "../common/namespaces.hpp"
 
 ConfigParser::ConfigParser() : serversCount_(0)
 {
@@ -22,16 +22,19 @@ ConfigParser::~ConfigParser()
 /**
  * todas las validaciones del archivo .conf
  * se gestionan en esta funcion.
+ *
  */
 void ConfigParser::parse()
 {
-	if (!validateFilePath())
+	if (!validateFileExtension())
 	{
-		// throw ConfigException("Invalid file path or extension: " + configFilePath_);
-		std::cout << "\nwe cant open the file: " << configFilePath_ << "\n";
+		throw ConfigException(error::invalid_extension + configFilePath_);
 	}
 	if (!validateFilePermissions())
-	if (checkIfFileHasValidContent() == true)
+	{
+		throw ConfigException(error::cannot_open_file + configFilePath_);
+	}
+	if (validateBasicContent() == true)
 	{
 		std::cout << "FILE IS VALID LINES.\n";
 	}
@@ -79,15 +82,25 @@ ConfigParser& ConfigParser::operator=(const ConfigParser& other)
  * is possible to open the file.
  * @return true or false
  */
-bool ConfigParser::validateFilePath() const
+bool ConfigParser::validateFileExtension() const
 {
 	if (configFilePath_.size() < 5 || configFilePath_.substr(
-		configFilePath_.size() - 5) != constants::EXTENSION_FILE)
+		configFilePath_.size() - 5) != constants::extension_file)
 	{
-		throw ConfigException("Invalid file extension: " + configFilePath_);
+		return false;
 	}
 	return true;
 }
+
+bool ConfigParser::validateFilePermissions() const
+{
+	std::ifstream ifs(configFilePath_.c_str());
+	if (!ifs.is_open())
+		return false;
+	ifs.close();
+	return true;
+}
+
 /*
 std::ifstream ifs(configFilePath_.c_str());
 if (!ifs.is_open())
@@ -105,17 +118,13 @@ ifs.close();
  * iterate through each line of file.
  * @return
  */
-bool ConfigParser::checkIfFileHasValidContent() const
+bool ConfigParser::validateBasicContent() const
 {
-	/**
+	std::ifstream ifsFile(configFilePath_.c_str());
 	if (!ifsFile.is_open())
 	{
-		// throw ConfigException("Cannot open file: [" + configFilePath_ + "]");
-		std::cout << "Cannot open file: [" + configFilePath_ + "]";
-		return false;
+		throw ConfigException(error::cannot_open_file + configFilePath_ + "in validateBasicContent");
 	}
-	*/
-	std::ifstream ifsFile(configFilePath_.c_str());
 	std::string line;
 	size_t lineNumber = 0;
 
@@ -135,16 +144,12 @@ bool ConfigParser::checkIfFileHasValidContent() const
 		line = trimLine(line);
 		if (line.empty())
 			continue;
-		logBuffer << "|" << lineNumber <<"|" << line << "\n";
+		logBuffer << "|" << lineNumber << "|" << line << "\n";
 	}
 	ifsFile.close();
-	if (lineNumber > 1)
-	{
-		return true;
-	}
 
 	/**
-	std::ofstream logFileOutput(constants::LOG_FILE_CLEAN.data());
+	std::ofstream logFileOutput(constants::log_file.data());
 	if (logFileOutput.is_open())
 	{
 		logFileOutput << "=== Config file debug: " << configFilePath_ << "===\n";
@@ -171,7 +176,7 @@ bool ConfigParser::checkIfFileHasValidContent() const
  *   "\t\ntest\r\n" -> "test"
  *   "   " -> ""
  */
-std::string ConfigParser::trimLine(std::string& line)
+std::string ConfigParser::trimLine(std::string& line) const
 {
 	const std::string whitespace = " \t\n\r";
 

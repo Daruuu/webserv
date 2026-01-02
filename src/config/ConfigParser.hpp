@@ -27,10 +27,10 @@ private:
 	ConfigParser(const ConfigParser& other);
 	ConfigParser& operator=(const ConfigParser& other);
 
-	bool validateFilePath() const;
+	bool validateFileExtension() const;
 	bool validateFilePermissions() const;
-	bool checkIfFileHasValidContent() const;
-	std::string trimLine(std::string& line) ;
+	bool validateBasicContent() const;
+	std::string trim Line(std::string& line) const;
 	std::string readFileContent() const;
 
 	void extractServerblocks(const std::string& content);

@@ -10,5 +10,5 @@ ConfigException::~ConfigException() throw()
 
 const char* ConfigException::what() const throw()
 {
-	return exception::what();
+	return message_.c_str();
 }

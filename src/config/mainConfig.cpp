@@ -4,7 +4,7 @@
 #include <fstream>
 #include <dirent.h>
 
-#include "../common/constants.hpp"
+#include "../common/namespaces.hpp"
 #include "ConfigParser.hpp"
 #include "ConfigException.hpp"
 
@@ -21,31 +21,15 @@ bool fileExists(const std::string& path)
 
 int main(int argc, char* argv[])
 {
+	std::string configPath = (argc > 1) ? argv[1] : constants::default_config_path;
+
+	if (!fileExists(configPath))
+	{
+		std::cerr << "Error: Config file: '" << configPath << "'\nPlease ensure:\n\t1. The file exists\n\t2. You have read permissions\n\t3. You are running from project root: ./webserver";
+		return 1;
+	}
 	try
 	{
-		std::string configPath;
-
-		if (argc == 1)
-		{
-			configPath = constants::DEFAULT_CONFIG_PATH;
-		}
-		else if (argc == 2)
-		{
-			configPath = argv[1];
-		}
-		else
-		{
-			std::cerr << "Usage: ./webserver [config_file.conf]" << std::endl;
-			return 1;
-		}
-
-		if (!fileExists(configPath))
-		{
-			std::cerr << "Error: Config file: '" << configPath << "'\nPlease ensure:\n\t1. The file exists\n\t2. You have read permissions\n\t3. You are running from project root: ./webserver";
-			return 1;
-		}
-
-		// Parse configuration
 		ConfigParser parser(configPath);
 		parser.parse();
 
