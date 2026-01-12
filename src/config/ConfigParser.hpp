@@ -13,10 +13,13 @@ public:
 	explicit ConfigParser(const std::string& configFile);
 	~ConfigParser();
 
-	void parse();
+	//	Getters and Setters
 	std::string& getConfigFilePath();
-	const std::vector<ServerConfig>& getServers() const;
 	size_t getServerCount() const;
+
+	void parse() const;
+
+	const std::vector<ServerConfig>& getServers() const;
 
 private:
 	std::string configFilePath_;
@@ -28,13 +31,16 @@ private:
 	ConfigParser(const ConfigParser& other);
 	ConfigParser& operator=(const ConfigParser& other);
 
+	//	different validations.
 	bool validateFileExtension() const;
 	bool validateFilePermissions() const;
 	bool validateBasicContent() const;
+	bool validateCurlyBrackets() const;
 
+	//	auxiliar member function
 	void removeComments(std::string& line) const;
 	void generatePrettyConfigLog() const;
-	std::string trimLine(std::string& line) const;
+	std::string trimLine(const std::string& line) const;
 	std::string readFileContent() const;
 
 	void MachineStatesOfConfigFile();

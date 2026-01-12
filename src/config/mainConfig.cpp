@@ -9,7 +9,7 @@
 #include "ConfigException.hpp"
 
 /**
- * returns 0 on success, -1 on error
+ * returns 0 on success, -1 on msg_errors
  * F_OK: check for existence
  * R_OK: check for read permission
 */
@@ -20,11 +20,14 @@ bool fileExists(const std::string& path)
 
 int main(int argc, char* argv[])
 {
-	std::string configPath = (argc > 1) ? argv[1] : constants::default_config_path;
+	const std::string configPath = (argc > 1)
+										? argv[1]
+										: config::paths::default_config_path;
 
 	if (!fileExists(configPath))
 	{
-		std::cerr << "Error: Config file: '" << configPath << "'\nPlease ensure:\n\t1. The file exists\n\t2. You have read permissions\n\t3. You are running from project root: ./webserver";
+		std::cerr << "Error: Config file: '" << configPath <<
+			"'\nPlease ensure:\n\t1. The file exists\n\t2. You have read permissions\n\t3. You are running from project root: ./webserver";
 		return 1;
 	}
 	try
@@ -33,13 +36,13 @@ int main(int argc, char* argv[])
 		std::cout << "Config file: [" << parser.getConfigFilePath() << "]\n";
 		parser.parse();
 
-		// Get parsed servers
+		/**
+		// // Get parsed servers
 		// const std::vector<ServerConfig>& servers = parser.getServers();
 		// std::cout << "✓ Successfully loaded " << servers.size() << " server(s)"
-			// << std::endl;
+		// 	<< std::endl;
 
 		// Debug: print server
-		/*
 		for (size_t i = 0; i < servers.size(); ++i)
 		{
 			std::cout << "\n--- Server " << (i + 1) << " ---" << std::endl;
@@ -49,7 +52,7 @@ int main(int argc, char* argv[])
 	}
 	catch (const ConfigException& e)
 	{
-		std::cerr << "Configuration error: " << e.what() << std::endl;
+		std::cerr << "Configuration msg_errors: " << e.what() << std::endl;
 		return 1;
 	}
 	catch (const std::exception& e)
