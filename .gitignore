@@ -91,3 +91,4 @@ webserver
 /local
 /build
 /.cache
+compile_commands.json

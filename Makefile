@@ -92,7 +92,7 @@ debug: re
 
 bear: fclean
 	bear -- $(MAKE) all
-	
+
 # extras
 -include $(DEP_FILES)
 
