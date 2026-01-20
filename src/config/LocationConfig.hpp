@@ -16,7 +16,7 @@ private:
 	std::string redirect_;                // return 301 /new-path (optional)
 
 public:
-	
+
 	// Validation
 	bool isMethodAllowed(const std::string& method) const;
 	bool isValid() const;

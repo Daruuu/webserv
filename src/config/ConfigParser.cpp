@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <cstdlib>
 
 #include "ConfigException.hpp"
 #include "../common/namespaces.hpp"
@@ -358,18 +359,13 @@ void ConfigParser::extractServerBlock(const std::string& content,
 	servers_count_ = raw_server_blocks_.size();
 }
 
-void ConfigParser::parserServerBlocks() const
+void ConfigParser::parserServerBlocks()
 {
 	for (size_t i = 0; i < raw_server_blocks_.size(); ++i)
 	{
-		// Llamamos a nuestra función de parseo que retorna un ServerConfig
-		// ServerConfig server = parseServerBlock(raw_server_blocks_[i]);
-		// servers_.push_back(server); // Asumimos que ConfigParser es non-const o servers_ es mutable
-		// Como el metodo es const, no podemos modificar servers_. 
-		// Deberíamos quitar el const de parserServerBlocks o hacerlo en parse().
-		// Por ahora solo imprimimos para verificar.
-		std::cout << "Parsing Block " << i + 1 << "...\n";
-		// parseServerBlock(raw_server_blocks_[i]); 
+		ServerConfig server = parseServerBlock(raw_server_blocks_[i]);
+		servers_.push_back(server);
+		std::cout << "Parsing Block " << i + 1 << " [OK]\n";
 	}
 }
 
@@ -400,20 +396,20 @@ ServerConfig ConfigParser::parseServerBlock(const std::string& block)
 
 			if (tokens[0] == "listen")
 			{
-				// serverConfig.setPort(std::atoi(tokens[1].c_str()));
-				std::cout << "  Configured Port: " << tokens[1] << "\n";
+				serverConfig.setPort(std::atoi(tokens[1].c_str()));
+				// std::cout << "  Configured Port: " << tokens[1] << "\n";
 			}
 			else if (tokens[0] == "host")
 			{
-				// serverConfig.setHost(tokens[1]);
-				std::cout << "  Configured Host: " << tokens[1] << "\n";
+				serverConfig.setHost(tokens[1]);
+				// std::cout << "  Configured Host: " << tokens[1] << "\n";
 			}
 			else if (tokens[0] == "location")
 			{
 				state = config::IN_LOCATION;
-				// currentLocation = LocationConfig();
-				// currentLocation.setPath(tokens[1]);
-				std::cout << "  >> Entering Location: " << tokens[1] << "\n";
+				currentLocation = LocationConfig();
+				currentLocation.setPath(tokens[1]);
+				// std::cout << "  >> Entering Location: " << tokens[1] << "\n";
 			}
 		}
 		else if (state == config::IN_LOCATION)
@@ -421,19 +417,33 @@ ServerConfig ConfigParser::parseServerBlock(const std::string& block)
 			if (tokens[0] == "}")
 			{
 				state = config::IN_SERVER;
-				// serverConfig.addLocation(currentLocation);
-				std::cout << "  << Exiting Location\n";
+				serverConfig.addLocation(currentLocation);
+				// std::cout << "  << Exiting Location\n";
 				continue;
 			}
 			
 			if (tokens[0] == "root")
 			{
-				// currentLocation.setRoot(tokens[1]);
-				std::cout << "    Location Root: " << tokens[1] << "\n";
+				currentLocation.setRoot(tokens[1]);
+				// std::cout << "    Location Root: " << tokens[1] << "\n";
 			}
 			else if (tokens[0] == "methods") // example
 			{
-				std::cout << "    Location Methods: " << tokens[1] << "\n";
+				for (size_t i = 1; i < tokens.size(); ++i)
+				{
+					std::string method = tokens[i];
+					if (method[method.size()-1] == ';') method = method.substr(0, method.size()-1); 
+					currentLocation.addMethod(method);
+				}
+				// std::cout << "    Location Methods: " << tokens[1] << "\n";
+			}
+			else if (tokens[0] == "index")
+			{
+				currentLocation.setIndex(tokens[1]);
+			}
+			else if (tokens[0] == "autoindex")
+			{
+				currentLocation.setAutoIndex(tokens[1] == "on");
 			}
 		}
 	}

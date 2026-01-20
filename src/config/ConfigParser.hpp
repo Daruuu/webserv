@@ -48,7 +48,7 @@ private:
 
 	void MachineStatesOfConfigFile();
 	void extractServerBlock(const std::string& content, const std::string& typeOfExtraction);
-	void parserServerBlocks() const;
+	void parserServerBlocks();
 	
 	ServerConfig parseServerBlock(const std::string& block);
 	LocationConfig parseLocationBlock(const std::string& block);
