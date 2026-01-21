@@ -28,32 +28,16 @@ private:
 	std::string server_name_;	// (optional ??)
 	size_t max_body_size_;                         // max is 1048576 (bytes)
 	std::map<int, std::string> error_pages_;       // Map: HTTP code -> file path | Error pages: error_page 404 /404.html
-	std::vector<LocationConfig> location_configs_; // All location { } blocks
+	// std::vector<LocationConfig> location_configs_; // All location { } blocks
 
 public:
 	ServerConfig();
 	ServerConfig(const ServerConfig& other);
 	ServerConfig& operator=(const ServerConfig& other);
 	~ServerConfig();
-	
-	// Getters
-	int getPort() const;
-	const std::string& getHost() const;
-	const std::string& getServerName() const;
-	size_t getMaxBodySize() const;
-	const std::map<int, std::string>& getErrorPages() const;
-	const std::vector<LocationConfig>& getLocations() const;
-	
-	// Setters
-	void setPort(int port);
-	void setHost(const std::string& host);
-	void setServerName(const std::string& name);
-	void setMaxBodySize(size_t size);
-	void addErrorPage(int code, const std::string& path);
-	void addLocation(const LocationConfig& location);
-	
+
 	// Validation
-	bool isValid() const;
+	// bool isValid() const;
 	
 	// Debug
 	void print() const;

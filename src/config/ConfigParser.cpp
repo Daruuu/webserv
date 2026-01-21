@@ -359,6 +359,7 @@ void ConfigParser::extractServerBlock(const std::string& content,
 	servers_count_ = raw_server_blocks_.size();
 }
 
+/*
 void ConfigParser::parserServerBlocks()
 {
 	for (size_t i = 0; i < raw_server_blocks_.size(); ++i)
@@ -368,7 +369,9 @@ void ConfigParser::parserServerBlocks()
 		std::cout << "Parsing Block " << i + 1 << " [OK]\n";
 	}
 }
+*/
 
+/*
 ServerConfig ConfigParser::parseServerBlock(const std::string& block)
 {
 	ServerConfig serverConfig;
@@ -449,3 +452,4 @@ ServerConfig ConfigParser::parseServerBlock(const std::string& block)
 	}
 	return serverConfig;
 }
+*/

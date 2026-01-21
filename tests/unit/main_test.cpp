@@ -20,6 +20,7 @@
 // main() provided in 000-CatchMain.cpp
 
 
+/*
 std::string one() {
     return "1";
 }
@@ -38,6 +39,7 @@ TEST_CASE( "Assert that something is true (stop at first failure)", "[require]" 
     REQUIRE( one() == "x" );
     REQUIRE( one() == "1" );
 }
+*/
 
 /*
 TEST_CASE( "Assert that something is true (continue after failure)", "[check]" ) {
