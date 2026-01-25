@@ -80,6 +80,7 @@ void ConfigParser::parse()
 	}
 
 	clean_file_str_ = CleanFileConfig();
+	// std::ofstream log(config::paths::log_file.data());
 	std::ofstream log(config::paths::log_file.data());
 	log << clean_file_str_;
 	log.close();
@@ -129,7 +130,7 @@ bool ConfigParser::ValidateFilePermissions() const
  * iterate through each line of file.
  * @return
  */
-std::string ConfigParser::CleanFileConfig()
+std::string ConfigParser::CleanFileConfig() const
 {
 	std::ifstream ifs(config_file_path_.c_str());
 	if (!ifs.is_open())

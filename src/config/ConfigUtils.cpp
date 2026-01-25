@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <unistd.h>
 
 #include "ConfigException.hpp"
 
@@ -74,6 +75,16 @@ namespace config
 				result += word;
 			}
 			return result;
+		}
+
+		/**
+		 * returns 0 on success, -1 on msg_errors
+		 * F_OK: check for existence
+		 * R_OK: check for read permission
+		*/
+		bool fileExists(const std::string& path)
+		{
+			return (access(path.c_str(), F_OK | R_OK) == 0);
 		}
 	}
 

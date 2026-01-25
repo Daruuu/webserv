@@ -4,7 +4,7 @@
 
 namespace colors
 {
-	// Colores de texto (foreground)
+	// Colors of text (foreground)
 	static const char* const reset = "\033[0m";
 	static const char* const bold = "\033[1m";
 	static const char* const underline = "\033[4m";
@@ -55,7 +55,6 @@ namespace config
 		void debugConfigLog(const std::string& config_file_path);
 
 	}
-
 
 }
 

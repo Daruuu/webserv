@@ -11,6 +11,7 @@ namespace config
 		void removeComments(std::string& line);
 		std::string removeSpacesAndTabs(std::string& line);
 		std::string normalizeSpaces(const std::string& line);
+		bool fileExists(const std::string& path);
 	}
 
 }

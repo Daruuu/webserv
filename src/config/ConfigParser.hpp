@@ -36,11 +36,8 @@ private:
 	bool ValidateFileExtension() const;
 	bool ValidateFilePermissions() const;
 
-	std::string CleanFileConfig();
+	std::string CleanFileConfig() const;
 	bool ValidateCurlyBrackets() const;
-
-	//	auxiliar member function
-	void DebugConfigLog() const;
 
 	void MachineStatesOfConfigFile();
 	void extractServerBlock(const std::string& content,

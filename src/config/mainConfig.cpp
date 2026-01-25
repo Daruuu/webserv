@@ -1,22 +1,11 @@
 #include <iostream>
 #include <string>
-#include <unistd.h>
 #include <fstream>
-#include <dirent.h>
 
 #include "../common/namespaces.hpp"
 #include "ConfigParser.hpp"
 #include "ConfigException.hpp"
-
-/**
- * returns 0 on success, -1 on msg_errors
- * F_OK: check for existence
- * R_OK: check for read permission
-*/
-bool fileExists(const std::string& path)
-{
-	return (access(path.c_str(), F_OK | R_OK) == 0);
-}
+#include "ConfigUtils.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -24,7 +13,7 @@ int main(int argc, char* argv[])
 										? argv[1]
 										: config::paths::default_config_path;
 
-	if (!fileExists(configPath))
+	if (!config::utils::fileExists(configPath))
 	{
 		std::cerr << "Error: Config file: '" << configPath <<
 			"'\nPlease ensure:\n\t1. The file exists\n\t2. You have read permissions\n\t3. You are running from project root: ./webserver";
