@@ -72,7 +72,29 @@ En un objeto con campos útiles:
 - cookies = { user: ana }
 - body = (vacío)
 
-## 7) Lo que implementé (mi parte)
+## 7) Diagrama simple del flujo (consume + estados)
+```text
+consume(data)
+   |
+   v
+_buffer += data
+   |
+   v
+switch (_state)
+  PARSING_START_LINE -> parseStartLine()
+  PARSING_HEADERS    -> parseHeaders()
+  PARSING_BODY       -> parseBody()
+   |
+   v
+¿COMPLETE?
+  sí -> el caller lee request y decide reset()
+  no -> esperar más data
+```
+
+## 8) Diagrama en draw.io
+![Flujo del parser (draw.io)](docshttp/Webserver-Flujo%20PARSER%20BODY%20.drawio.svg)
+
+## 9) Lo que implementé (mi parte)
 - Implementé un parser incremental con máquina de estados en `HttpParser`:
   - Entrada principal en `consume()`.
   - Start line en `HttpParserStartLine.cpp`.
@@ -87,7 +109,7 @@ En un objeto con campos útiles:
   - `test_http_request`
   - `test_http_parser`
 
-## 8) Apuntes / documentación que fui escribiendo
+## 10) Apuntes / documentación que fui escribiendo
 - `docsHttp/start-line.md`: request line, URI, query string.
 - `docsHttp/headers.md`: headers, Content-Length, chunked y errores.
 - `docsHttp/body.md`: body, Content-Type y tipos comunes.

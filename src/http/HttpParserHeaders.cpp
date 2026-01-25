@@ -156,18 +156,15 @@ void HttpParser::parseHeaders()
         std::string line;
         if (!extractLine(line))
             return;// No hay línea completa, esperamos al siguiente epoll()
-//// Caso 1: Línea vacía -> Fin de headers
+        // Caso 1: Línea vacía -> Fin de headers
+        if (line.empty() && !validateHeaders())
+        {
+            _state = ERROR;
+            return;
+        }
+
         if (line.empty()) //fin de headers \r\n\r\n
         {
-            // Forma anidada (original):
-            // if (!validateHeaders()) { _state = ERROR; return; }
-
-            // Forma más plana (con &&):
-            if (line.empty() && !validateHeaders())
-            {
-                _state = ERROR;
-                return;
-            }
 
             if (_isChunked == true || _contentLength > 0)
                 _state = PARSING_BODY;
