@@ -8,6 +8,7 @@
 #include "../http/HttpParser.hpp"
 #include "../http/HttpRequest.hpp"
 #include "../http/HttpResponse.hpp"
+#include "RequestProcessor.hpp"
 
 // Representa una conexión TCP con un cliente.
 // Se encarga de:
@@ -28,7 +29,7 @@ enum ClientState {
     STATE_READING_HEADER,
     STATE_READING_BODY,
     STATE_WRITING_RESPONSE,
-    STATE_FINISHED,
+    STATE_CLOSED,
 };
 
 
@@ -39,9 +40,10 @@ private:
     std::string         _outBuffer;  // respuesta lista para enviar (o parcialmente enviada)
     HttpParser          _parser;
     HttpResponse        _response;
+    RequestProcessor    _processor;
     ClientState         _state;
     struct sockaddr_in  _addr;
-    //time_t _lastActivity; para gestionar timeouts
+    time_t              _lastActivity; // para gestionar timeouts
 
     // Invocado cuando el parser marca una HttpRequest como completa.
     void handleCompleteRequest();
@@ -54,6 +56,8 @@ public:
     //GETTERS
     int getFd() const;
     ClientState getState() const;
+    bool needsWrite() const;
+    time_t getLastActivity() const;
     
 
     //HANDLES

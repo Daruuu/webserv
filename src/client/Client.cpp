@@ -2,16 +2,6 @@
 
 #include <sys/socket.h>
 #include <unistd.h>
-#include <errno.h>
-
-static std::string httpVersionToString(HttpVersion version)
-{
-    if (version == HTTP_VERSION_1_0)
-        return "HTTP/1.0";
-    if (version == HTTP_VERSION_1_1)
-        return "HTTP/1.1";
-    return "HTTP/1.1";
-}
 
 Client::Client(int fd, struct sockaddr_in addr)
     : _fd(fd),
@@ -19,8 +9,10 @@ Client::Client(int fd, struct sockaddr_in addr)
       _outBuffer(),
       _parser(),
       _response(),
+      _processor(),
       _state(STATE_IDLE),
-      _addr(addr)
+      _addr(addr),
+      _lastActivity(std::time(0))
 {
 }
 
@@ -38,6 +30,16 @@ ClientState Client::getState() const
     return _state;
 }
 
+bool Client::needsWrite() const
+{
+    return !_outBuffer.empty();
+}
+
+time_t Client::getLastActivity() const
+{
+    return _lastActivity;
+}
+
 
 //MOTOR DE ENTRADA  
 //ESTE METODO SE LLAMARA CUANDO EPOLL NOS AVISE CUANDO HAY EPOLLIN
@@ -52,33 +54,24 @@ void Client::handleRead()
     //3) anadir al buffer de procesamiento 
     //4) invocar al parser (la logia que ya esta hecha)
     //5)verificar si el parser termino 
-    while (true)
+    bytesRead = recv(_fd, buffer, sizeof(buffer), 0);
+    if (bytesRead > 0)
     {
-        bytesRead = recv(_fd, buffer, sizeof(buffer), 0);
-        if (bytesRead > 0)
-        {
-            if (_state == STATE_IDLE)
-                _state = STATE_READING_HEADER;
-            _parser.consume(std::string(buffer, bytesRead));
+        _lastActivity = std::time(0);
+        if (_state == STATE_IDLE)
+            _state = STATE_READING_HEADER;
+        _parser.consume(std::string(buffer, bytesRead));
 
-            if (_parser.getState() == COMPLETE || _parser.getState() == ERROR)
-            {
-                handleCompleteRequest();
-                break;
-            }
-        }
-        else if (bytesRead == 0)
-        {
-            _state = STATE_FINISHED;
-            break;
-        }
-        else
-        {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-                break;
-            _state = STATE_FINISHED;
-            break;
-        }
+        if (_parser.getState() == COMPLETE || _parser.getState() == ERROR)
+            handleCompleteRequest();
+    }
+    else if (bytesRead == 0)
+    {
+        _state = STATE_CLOSED;
+    }
+    else
+    {
+        _state = STATE_CLOSED;
     }
 }
 
@@ -87,20 +80,19 @@ void Client::handleRead()
 //SEND() NO VA ENVAIR Todo EL VECTOR DE UNA VEZ
 
 void Client::handleWrite() {
-    while (!_outBuffer.empty())
+    if (_outBuffer.empty())
+        return;
+
+    ssize_t bytesSent = send(_fd, _outBuffer.c_str(), _outBuffer.size(), 0);
+    if (bytesSent > 0)
     {
-        ssize_t bytesSent = send(_fd, _outBuffer.c_str(), _outBuffer.size(), 0);
-        if (bytesSent > 0)
-        {
-            _outBuffer.erase(0, bytesSent);
-        }
-        else if (bytesSent == -1)
-        {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-                break;
-            _state = STATE_FINISHED;
-            return;
-        }
+        _lastActivity = std::time(0);
+        _outBuffer.erase(0, bytesSent);
+    }
+    else if (bytesSent < 0)
+    {
+        _state = STATE_CLOSED;
+        return;
     }
 
     //1)Intentar enviar lo que queda en el buffer
@@ -112,7 +104,7 @@ void Client::handleWrite() {
         const HttpRequest& request = _parser.getRequest();
         bool shouldClose = (_parser.getState() == ERROR) || request.shouldCloseConnection();
         if (shouldClose)
-            _state = STATE_FINISHED;
+            _state = STATE_CLOSED;
         else
         {
             _parser.reset();
@@ -126,23 +118,8 @@ void Client::handleWrite() {
 void Client::buildResponse() {
     //depende del status que tengas respondemos una cosa u otra...
     //serializar a raw bytes para el envio 
-    _response = HttpResponse();
     const HttpRequest& request = _parser.getRequest();
-
-    int statusCode = HTTP_STATUS_OK;
-    std::string body = "OK\n";
-
-    if (_parser.getState() == ERROR || request.getMethod() == HTTP_METHOD_UNKNOWN)
-    {
-        statusCode = HTTP_STATUS_BAD_REQUEST;
-        body = "Bad Request\n";
-    }
-
-    _response.setStatusCode(statusCode);
-    _response.setVersion(httpVersionToString(request.getVersion()));
-    _response.setHeader("Connection", request.shouldCloseConnection() ? "close" : "keep-alive");
-    _response.setHeader("Content-Type", "text/plain");
-    _response.setBody(body);
+    _response = _processor.process(request, _parser.getState() == ERROR);
 }
 
 void Client::handleCompleteRequest()

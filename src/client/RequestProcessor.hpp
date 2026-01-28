@@ -9,6 +9,7 @@
 // construye un HttpResponse (estático, CGI, error, etc.).
 class RequestProcessor {
 public:
+    HttpResponse process(const HttpRequest& request, bool parseError);
 private:
 };
 
