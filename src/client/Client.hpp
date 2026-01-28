@@ -25,7 +25,7 @@
 //haciendo en cada momento para que el bucle rpincipal sepa escuchar eventos
 //POLLIN POLLOUT 
 enum ClientState { 
-    STATE_IDLE,
+    STATE_IDLE, //espera pasiva es el momento en que la conexcion esta abierta y establecida.pero el servidor no esta procesando peticion activa , despues de accept 
     STATE_READING_HEADER,
     STATE_READING_BODY,
     STATE_WRITING_RESPONSE,
