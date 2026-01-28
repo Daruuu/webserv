@@ -38,8 +38,16 @@ namespace config
 	namespace section
 	{
 		static const std::string server = "server";
-		static const std::string local = "location";
+		static const std::string listen = "listen";
+		static const std::string host = "host";
+		static const std::string location = "location";
 		static const std::string error_page= "error_page";
+		static const std::string root = "root";
+		static const std::string index = "index";
+		static const std::string autoindex = "autoindex";
+		static const std::string autoindexOn = "on";
+		static const std::string returnStr = "return";
+		static const std::string uploadStore= "upload_store";
 
 	}
 

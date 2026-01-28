@@ -86,51 +86,86 @@ namespace config
 		{
 			return (access(path.c_str(), F_OK | R_OK) == 0);
 		}
-	}
 
-	namespace debug
-	{
-		/**
-		 * AUX FUNCTION TO DEBUG
-		 * export config file '.log'
-		 * remove empty lines and comment lines.
-		 */
-		void debugConfigLog(const std::string& config_file_path)
+		std::vector<std::string> split(const std::string& str, char delimiter)
 		{
-			std::ifstream ifs(config_file_path.c_str());
-			if (!ifs.is_open())
-			{
-				throw ConfigException(
-					config::errors::cannot_open_file +
-					config_file_path +
-					" (in generatePrettyConfigLog)"
-				);
-			}
+			std::vector<std::string> tokens;
+			std::string token;
+			std::istringstream tokenStream(str);
 
-			std::ofstream logFile(config::paths::log_file.c_str());
-			if (!logFile.is_open())
+			if (delimiter == ' ')
 			{
-				std::cerr << "Warning: Could not open/create pretty log file: ";
-				return;
+				while (tokenStream >> token)
+					tokens.push_back(token);
 			}
-
-			logFile << "=== Pretty print of configuration file ===\n";
-			logFile << "File: " << config_file_path << "\n";
-			logFile << "Generated: " << __DATE__ << " " << __TIME__ << "\n";
-			logFile << "----------------------------------------\n\n";
-
-			std::string line;
-			size_t lineNum = 0;
-			while (std::getline(ifs, line))
+			else
 			{
-				++lineNum;
-				utils::removeComments(line);
-				line = utils::trimLine(line);
-				if (line.empty())
-					continue;
-				logFile << lineNum << "|" << line << "\n";
+				while (std::getline(tokenStream, token, delimiter))
+				{
+					tokens.push_back(token);
+				}
 			}
-			ifs.close();
+			return tokens;
 		}
+
+		/**
+		 * use find() function to search position of ';'
+		 * @return substr of str
+		 */
+		std::string removeSemicolon(const std::string& str)
+		{
+			size_t pos = str.find(';');
+			if (pos != std::string::npos)
+			{
+				return str.substr(0, pos);
+			}
+			return str;
+		}
+	}
+}
+
+namespace debug
+{
+	/**
+	* AUX FUNCTION TO DEBUG
+	* export config file '.log'
+	* remove empty lines and comment lines.
+	*/
+	void debugConfigLog(const std::string& config_file_path)
+	{
+		std::ifstream ifs(config_file_path.c_str());
+		if (!ifs.is_open())
+		{
+			throw ConfigException(
+				config::errors::cannot_open_file +
+				config_file_path +
+				" (in generatePrettyConfigLog)"
+			);
+		}
+
+		std::ofstream logFile(config::paths::log_file.c_str());
+		if (!logFile.is_open())
+		{
+			std::cerr << "Warning: Could not open/create pretty log file: ";
+			return;
+		}
+
+		logFile << "=== Pretty print of configuration file ===\n";
+		logFile << "File: " << config_file_path << "\n";
+		logFile << "Generated: " << __DATE__ << " " << __TIME__ << "\n";
+		logFile << "----------------------------------------\n\n";
+
+		std::string line;
+		size_t lineNum = 0;
+		while (std::getline(ifs, line))
+		{
+			++lineNum;
+			config::utils::removeComments(line);
+			line = config::utils::trimLine(line);
+			if (line.empty())
+				continue;
+			logFile << lineNum << "|" << line << "\n";
+		}
+		ifs.close();
 	}
 }

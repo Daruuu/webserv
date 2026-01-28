@@ -1,4 +1,7 @@
 #include "ConfigParser.hpp"
+
+#include <cstdlib>
+
 #include "LocationConfig.hpp"
 
 #include <fstream>
@@ -92,10 +95,9 @@ void ConfigParser::parse()
 		throw ConfigException(
 			"Invalid number of curly brackets " + config_file_path_);
 	}
-	else
-	{
-		std::cout << "curly brackerts correct :)\n";
-	}
+	
+	MachineStatesOfConfigFile();
+	parserServerBlocks();
 }
 
 /**
@@ -207,7 +209,7 @@ bool ConfigParser::ValidateCurlyBrackets() const
 void ConfigParser::MachineStatesOfConfigFile()
 {
 	if (clean_file_str_.empty())
-		return ;
+		return;
 
 	extractServerBlock(clean_file_str_, "server");
 }
@@ -256,97 +258,120 @@ void ConfigParser::extractServerBlock(const std::string& content,
 	servers_count_ = raw_server_blocks_.size();
 }
 
-/*
 void ConfigParser::parserServerBlocks()
 {
 	for (size_t i = 0; i < raw_server_blocks_.size(); ++i)
 	{
 		ServerConfig server = parseServerBlock(raw_server_blocks_[i]);
 		servers_.push_back(server);
-		std::cout << "Parsing Block " << i + 1 << " [OK]\n";
+		// std::cout << "Parsing Block " << i + 1 << " [OK]\n";
 	}
 }
-*/
 
-/*
-ServerConfig ConfigParser::parseServerBlock(const std::string& block)
+ServerConfig ConfigParser::parseServerBlock(const std::string& blockContent)
 {
-	ServerConfig serverConfig;
-	LocationConfig currentLocation;
-	config::ParserState state = config::IN_SERVER;
-	
-	std::stringstream ss(block);
+	ServerConfig server;
+	std::stringstream ss(blockContent);
 	std::string line;
 
-	while (std::getline(ss, line))
+	while (getline(ss, line))
 	{
-		RemoveComments(line);
-		line = TrimLine(line);
-		if (line.empty()) continue;
+		// 1. basic clean
+		line = config::utils::trimLine(line);
+		if (line.empty() || line[0] == '#')
+			continue;
 
+		// 2. Tokenization
 		std::vector<std::string> tokens;
-		std::stringstream ss_line(line);
-		std::string token;
-		while (ss_line >> token) tokens.push_back(token);
+		std::string directive = tokens[0];
 
-		if (state == config::IN_SERVER)
+		// 3. Dispatcher (Decidir qué hacer)
+		if (directive == config::section::listen)
 		{
-			if (tokens[0] == "server" && tokens[1] == "{") continue; // Inicio de bloque
-			if (tokens[0] == "}") break; // Fin de server
-
-			if (tokens[0] == "listen")
+			server.setPort(atoi(tokens[1].c_str()));
+		}
+		else if (directive == config::section::host)
+		{
+			//	remove ';'
+			server.setHost(config::utils::removeSemicolon(tokens[1]));
+		}
+		else if (directive == config::section::error_page)
+		{
+			// Lógica especial para múltiples códigos de error
+			// error_page 404 500 /error.html;
+			// error_page 404 /404.html;
+			// error_page 500 502 503 504 /50x.html;
+			if (tokens.size() >= 3)
 			{
-				serverConfig.setPort(std::atoi(tokens[1].c_str()));
-				// std::cout << "  Configured Port: " << tokens[1] << "\n";
-			}
-			else if (tokens[0] == "host")
-			{
-				serverConfig.setHost(tokens[1]);
-				// std::cout << "  Configured Host: " << tokens[1] << "\n";
-			}
-			else if (tokens[0] == "location")
-			{
-				state = config::IN_LOCATION;
-				currentLocation = LocationConfig();
-				currentLocation.setPath(tokens[1]);
-				// std::cout << "  >> Entering Location: " << tokens[1] << "\n";
+				std::string path = config::utils::removeSemicolon(tokens.back());
+				for (size_t i = 1; i < tokens.size() - 1; ++i)
+				{
+					server.addErrorPage(std::atoi(tokens[i].c_str()), path);
+				}
 			}
 		}
-		else if (state == config::IN_LOCATION)
+		else if (directive == config::section::location)
 		{
-			if (tokens[0] == "}")
+			std::string locationPath = tokens[1];
+			LocationConfig loc;
+			loc.setPath(locationPath);
+
+			while (std::getline(ss, line))
 			{
-				state = config::IN_SERVER;
-				serverConfig.addLocation(currentLocation);
-				// std::cout << "  << Exiting Location\n";
-				continue;
-			}
-			
-			if (tokens[0] == "root")
-			{
-				currentLocation.setRoot(tokens[1]);
-				// std::cout << "    Location Root: " << tokens[1] << "\n";
-			}
-			else if (tokens[0] == "methods") // example
-			{
-				for (size_t i = 1; i < tokens.size(); ++i)
+				config::utils::removeComments(line);
+				line = config::utils::trimLine(line);
+				if (!line.empty())
 				{
-					std::string method = tokens[i];
-					if (method[method.size()-1] == ';') method = method.substr(0, method.size()-1); 
-					currentLocation.addMethod(method);
+					std::vector<std::string> locTokens = config::utils::split(
+						line, ' ');
+					if (locTokens.empty())
+					{
+						continue;
+					}
+					if (locTokens[0] == "}")
+					{
+						break; // End of location block
+					}
+					if (locTokens[0] == config::section::root)
+					{
+						loc.setRoot(
+							config::utils::removeSemicolon(locTokens[1]));
+					}
+					else if (locTokens[0] == config::section::index)
+					{
+						for (size_t i = 1; i < locTokens.size(); ++i)
+							loc.addIndex(
+								config::utils::removeSemicolon(locTokens[i]));
+					}
+					else if (locTokens[0] == config::section::autoindex)
+					{
+						std::string val = config::utils::removeSemicolon(
+							locTokens[1]);
+						loc.setAutoIndex(val == config::section::autoindexOn);
+					}
+					else if (locTokens[0] == "methods" || locTokens[0] ==
+						"allow_methods")
+					{
+						for (size_t i = 1; i < locTokens.size(); ++i)
+							loc.addMethod(
+								config::utils::removeSemicolon(locTokens[i]));
+					}
+					else if (locTokens[0] == config::section::returnStr) // redirection
+					{
+						// simple support: return 301 /url;
+						if (locTokens.size() >= 3)
+							loc.setRedirect(
+								config::utils::removeSemicolon(locTokens[2]));
+					}
+					else if (locTokens[0] == config::section::uploadStore)
+					{
+						loc.setUploadStore(
+							config::utils::removeSemicolon(locTokens[1]));
+					}
 				}
-				// std::cout << "    Location Methods: " << tokens[1] << "\n";
 			}
-			else if (tokens[0] == "index")
-			{
-				currentLocation.setIndex(tokens[1]);
-			}
-			else if (tokens[0] == "autoindex")
-			{
-				currentLocation.setAutoIndex(tokens[1] == "on");
-			}
+			server.addLocation(loc);
 		}
 	}
-	return serverConfig;
+	return server;
 }
-*/
