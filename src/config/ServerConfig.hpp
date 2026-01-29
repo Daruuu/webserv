@@ -1,15 +1,16 @@
 #ifndef WEBSERV_SERVERCONFIG_HPP
 #define WEBSERV_SERVERCONFIG_HPP
 
+#include <iostream>
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
 class LocationConfig;
 
 /**
  * ServerConfig stores configuration for one server { } block
- * 
+ *
  * Corresponds to nginx-like config:
  * server {
  *     listen 8080;
@@ -29,7 +30,8 @@ private:
 	std::string root_; //	root server
 	std::string index_; //	root server
 	size_t max_body_size_; // max is 1048576 (bytes)
-	std::map<int, std::string> error_pages_;	// Error pages: error_page 404 /404.html
+	std::map<int, std::string> error_pages_;
+	// Error pages: error_page 404 /404.html
 	std::vector<LocationConfig> location_; // All location { } blocks
 
 public:
@@ -61,12 +63,27 @@ public:
 	const std::map<int, std::string>& getErrorPages() const;
 	const std::vector<LocationConfig>& getLocations() const;
 
-	// friend function
-	friend std::ostream& operator<<(std::ostream& os, const ServerConfig& config);
-
 	// Debug
 	void print() const;
+
+	// Friend function for logging/printing (Hidden Friend)
+	friend std::ostream& operator<<(std::ostream& os,
+									const ServerConfig& config)
+	{
+		os << "Server Config:" << "\n"
+			<< "  Port: " << config.getPort() << "\n"
+			<< "  Host: " << config.getHost() << "\n"
+			<< "  Name: " << config.getServerName() << "\n";
+
+		std::map<int, std::string>::const_iterator it;
+
+		for (it = config.error_pages_.begin(); it != config.error_pages_.end();
+			++it)
+		{
+			os << "  Error " << it->first << ": " << it->second << "\n";
+		}
+		return os;
+	}
 };
 
-
-#endif //WEBSERV_SERVERCONFIG_HPP
+#endif // WEBSERV_SERVERCONFIG_HPP

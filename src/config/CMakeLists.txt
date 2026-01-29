@@ -4,7 +4,7 @@ add_library(config STATIC
         ServerConfig.cpp
         ConfigUtils.cpp
         ConfigUtils.hpp
-        #        LocationConfig.cpp
+        LocationConfig.cpp
 )
 
 # definimos donde estan los headers (.hpp)
