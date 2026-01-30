@@ -3,10 +3,9 @@
 
 #include <vector>
 
+#include "../config/ServerConfig.hpp"
 #include "../http/HttpRequest.hpp"
 #include "../http/HttpResponse.hpp"
-
-struct ServerBlock;
 
 // El cerebro del servidor: es quien decide que hacer con la peticion dado un HttpRequest y la configuración,
 // construye un HttpResponse (estático, CGI, error, etc.) y lo devuelve al cliente.
@@ -14,7 +13,7 @@ struct ServerBlock;
 class RequestProcessor {
 public:
     void process(const HttpRequest& request,
-                 const std::vector<ServerBlock>* configs,
+                 const std::vector<ServerConfig>* configs,
                  bool parseError,
                  HttpResponse& response);
 private:

@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 #include <cstring>
 
-ServerManager::ServerManager() {
+ServerManager::ServerManager() : configs_(0) {
 }
 
 ServerManager::~ServerManager() {
@@ -41,6 +41,10 @@ void ServerManager::start(const std::string& host, int port) {
 	epoll_.addFd(listener_.getFd(), EPOLLIN);
 	
 	std::cout << "Server started and ready to accept connections" << std::endl;
+}
+
+void ServerManager::setConfigs(const std::vector<ServerConfig>* configs) {
+	configs_ = configs;
 }
 
 /**
@@ -146,7 +150,7 @@ void ServerManager::handleNewConnection() {
 	epoll_.addFd(clientFd, EPOLLIN | EPOLLRDHUP);
 
 	// Guardar el fd del cliente para poder rastrearlo
-	clients_[clientFd] = new Client(clientFd, 0);
+	clients_[clientFd] = new Client(clientFd, configs_);
 }
 
 /**

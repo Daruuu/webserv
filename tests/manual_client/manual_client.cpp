@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include "../../src/client/Client.hpp"
+#include "../../src/config/ServerConfig.hpp"
 
 int main()
 {
@@ -16,7 +17,7 @@ int main()
         return 1;
     }
 
-    std::vector<ServerBlock> dummyConfigs;
+    std::vector<ServerConfig> dummyConfigs;
     Client client(fds[0], &dummyConfigs);
 
     const std::string request =

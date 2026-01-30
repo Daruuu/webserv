@@ -33,6 +33,10 @@ int main(int argc, char *argv[]) {
 	std::cout << "Esto se pone interesante" << std::endl;
 
 	try {
+		// TODO: cuando ConfigParser este listo:
+		// - ConfigParser parser("config/default.conf");
+		// - parser.parse();
+		// - server.setConfigs(&parser.getServers());
 		// Crear el gestor del servidor
 		// Esto crea:
 		// - Un TcpListener (socket de escucha)

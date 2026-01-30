@@ -4,6 +4,8 @@
 #include "TcpListener.hpp"
 #include "EpollWrapper.hpp"
 #include "../client/Client.hpp"
+#include "../config/ServerConfig.hpp"
+#include <vector>
 #include <map>
 #include <string>
 
@@ -39,6 +41,9 @@ private:
 	
 	// Mapa fd -> Client*
 	std::map<int, Client*> clients_;
+
+	// Configuracion compartida (ServerConfig)
+	const std::vector<ServerConfig>* configs_;
 	
 	/**
 	 * Maneja nuevas conexiones entrantes
@@ -78,6 +83,7 @@ public:
 	 * 3. El servidor está listo para recibir conexiones
 	 */
 	void start(const std::string& host, int port);
+	void setConfigs(const std::vector<ServerConfig>* configs);
 	
 	/**
 	 * Ejecuta el bucle principal de eventos (NO RETORNA)

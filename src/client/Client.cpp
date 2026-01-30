@@ -3,7 +3,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-Client::Client(int fd, const std::vector<ServerBlock>* configs)
+Client::Client(int fd, const std::vector<ServerConfig>* configs)
     : _fd(fd),
       _inBuffer(),
       _outBuffer(),

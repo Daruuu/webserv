@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "RequestProcessor.hpp"
+#include "../config/ServerConfig.hpp"
 #include "../http/HttpParser.hpp"
 #include "../http/HttpRequest.hpp"
 #include "../http/HttpResponse.hpp"
@@ -31,9 +32,6 @@ enum ClientState {
     STATE_CLOSED,
 };
 
-struct ServerBlock;
-
-
 class Client {
 private:
     Client(const Client&);
@@ -45,7 +43,7 @@ private:
     HttpParser          _parser;
     HttpResponse        _response;
     RequestProcessor    _processor;
-    const std::vector<ServerBlock>* _configs;
+    const std::vector<ServerConfig>* _configs;
     ClientState         _state;
     time_t              _lastActivity; // para gestionar timeouts
 
@@ -53,7 +51,7 @@ private:
     void handleCompleteRequest();
 
 public:
-    Client(int fd, const std::vector<ServerBlock>* configs);
+    Client(int fd, const std::vector<ServerConfig>* configs);
     ~Client();
 
     // Getters
