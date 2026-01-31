@@ -1,0 +1,22 @@
+#ifndef WEBSERV_CONFIGUTILS_HPP
+#define WEBSERV_CONFIGUTILS_HPP
+
+#include "../common/namespaces.hpp"
+#include <vector>
+
+namespace config
+{
+	namespace utils
+	{
+		std::string trimLine(const std::string& line);
+		void removeComments(std::string& line);
+		std::string removeSpacesAndTabs(std::string& line);
+		std::string normalizeSpaces(const std::string& line);
+		bool fileExists(const std::string& path);
+
+		std::vector<std::string> split(const std::string& str, char delimiter);
+		std::string removeSemicolon(const std::string& str);
+	}
+}
+
+#endif //WEBSERV_CONFIGUTILS_HPP

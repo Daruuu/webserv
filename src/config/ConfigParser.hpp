@@ -20,6 +20,7 @@ public:
 	void parse();
 
 	const std::vector<ServerConfig>& getServers() const;
+	void exportToLogFile(std::string fileContent, std::string pathToExport);
 
 private:
 	std::string config_file_path_;
@@ -36,22 +37,17 @@ private:
 	bool ValidateFileExtension() const;
 	bool ValidateFilePermissions() const;
 
-	std::string CleanFileConfig();
+	std::string CleanFileConfig() const;
 	bool ValidateCurlyBrackets() const;
 
-	//	auxiliar member function
-	static void RemoveComments(std::string& line);
-	void DebugConfigLog() const;
-	static std::string TrimLine(const std::string& line);
-	static std::string RemoveSpacesAndTabs(std::string& line);
-	static std::string NormalizeSpaces(const std::string& line);
-
 	void MachineStatesOfConfigFile();
-	void extractServerBlock(const std::string& content, const std::string& typeOfExtraction);
+	void extractServerBlock(const std::string& content,
+							const std::string& typeOfExtraction);
 	void parserServerBlocks();
-	
-	ServerConfig parseServerBlock(const std::string& block);
-	LocationConfig parseLocationBlock(const std::string& block);
+
+	ServerConfig parseServerBlock(const std::string& blockContent);
+
+	// LocationConfig parseLocationBlock(const std::string& block);
 };
 
 //ostream

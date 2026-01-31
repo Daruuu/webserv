@@ -1,31 +1,26 @@
 # No necesita project() aquí
-set(CMAKE_CXX_STANDARD 11)  # use when testing
+set(CMAKE_CXX_STANDARD 11) # use when testing
 
-# Fuentes de tests (puedes usar GLOB o listarlos manualmente)
-file(GLOB TEST_SOURCES "*.cpp")
+# get all files inside this directory
+#file(GLOB TEST_SOURCES "*.cpp")
+file(GLOB_RECURSE TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 
 # Executable
-add_executable(unit_tests ${TEST_SOURCES})
+add_executable(unit_tests ${TEST_SOURCES}
+        #        config/test_config_parser.cpp
+)
 
-# Important: mismo include que el servidor + catch2
+# change version to c++11
+set_target_properties(unit_tests PROPERTIES CXX_STANDARD 11)
+
+# includes necesario (para encontrar catch2 y los headers del proyecto)
+# Link against the config library!
+target_link_libraries(unit_tests PRIVATE
+        config
+)
+
+# Includes needed
 target_include_directories(unit_tests PRIVATE
         ${CMAKE_SOURCE_DIR}/src/config
         ${CMAKE_SOURCE_DIR}/lib/catch2
 )
-
-# Si más adelante tienes muchas clases → puedes crear una lib estática/objetos
-# (muy buena práctica en Webserv para evitar duplicar compilación)
-# Por ahora con GLOB está bien para empezar
-
-# Opcional: flags de warnings/debug
-#if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-#    target_compile_options(unit_tests PRIVATE -Wall -Wextra -Werror -g)
-#endif()
-
-# Añade tests a CTest (y CLion los detecta automáticamente)
-#include(CTest)
-#include(Catch)
-# si usas Catch2 v3+ → si no, omítelo o copia el .cmake de Catch2
-#catch_discover_tests(unit_tests)
-
-# Si usas v2 (single-header) y #define CATCH_CONFIG_MAIN → no necesitas Catch.cmake

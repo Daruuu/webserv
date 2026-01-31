@@ -4,7 +4,7 @@
 
 namespace colors
 {
-	// Colores de texto (foreground)
+	// Colors of text (foreground)
 	static const char* const reset = "\033[0m";
 	static const char* const bold = "\033[1m";
 	static const char* const underline = "\033[4m";
@@ -25,7 +25,8 @@ namespace config
 	{
 		// static const std::string default_config_path = "../config/examples/nginx.conf";
 		static const std::string default_config_path = "../config/default.conf";
-		static const std::string log_file = "../config/logs/config-clean.log";
+		static const std::string log_file_config = "../config/logs/config-clean.log";
+		static const std::string log_file_server= "../config/logs/server.log";
 		static const std::string extension_file = ".conf";
 	}
 
@@ -38,8 +39,16 @@ namespace config
 	namespace section
 	{
 		static const std::string server = "server";
-		static const std::string local = "location";
+		static const std::string listen = "listen";
+		static const std::string host = "host";
+		static const std::string location = "location";
 		static const std::string error_page= "error_page";
+		static const std::string root = "root";
+		static const std::string index = "index";
+		static const std::string autoindex = "autoindex";
+		static const std::string autoindexOn = "on";
+		static const std::string returnStr = "return";
+		static const std::string uploadStore= "upload_store";
 
 	}
 
@@ -49,6 +58,12 @@ namespace config
 		IN_SERVER,
 		IN_LOCATION
 	};
+
+	namespace debug
+	{
+		void debugConfigLog(const std::string& config_file_path);
+
+	}
 
 }
 

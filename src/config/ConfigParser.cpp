@@ -1,14 +1,16 @@
 #include "ConfigParser.hpp"
+
+#include <cstdlib>
+
 #include "LocationConfig.hpp"
 
-#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <cstdlib>
 
 #include "ConfigException.hpp"
+#include "ConfigUtils.hpp"
 #include "../common/namespaces.hpp"
 
 ConfigParser::ConfigParser() : servers_count_(0)
@@ -63,6 +65,13 @@ const std::vector<ServerConfig>& ConfigParser::getServers() const
 	return servers_;
 }
 
+void ConfigParser::exportToLogFile(std::string fileContent, std::string pathToExport)
+{
+	std::ofstream log((pathToExport.data()));
+	log << fileContent;
+	log.close();
+}
+
 /**
  * main function of parsing
  *
@@ -74,19 +83,26 @@ void ConfigParser::parse()
 		throw ConfigException(
 			config::errors::invalid_extension + config_file_path_);
 	}
+	else
+	{
+		std::cout << "VALID FILE EXTENSION: ✅\n";
+	}
 	if (!ValidateFilePermissions())
 	{
 		throw ConfigException(
 			config::errors::cannot_open_file + config_file_path_);
 	}
+	else
+	{
+		std::cout << "VALID FILE PERMISSIONS: ✅\n";
+	}
 
 	clean_file_str_ = CleanFileConfig();
-	std::ofstream log(config::paths::log_file.data());
-	log << clean_file_str_;
-	log.close();
+	exportToLogFile(clean_file_str_, config::paths::log_file_config);
 
 	// std::cout << "CLEANFILESTR in PARSE:\n" << clean_file_str_.c_str();
 
+	//TODO: need to fix error order of brackets: '} {' should be error but now is not a error.
 	if (!ValidateCurlyBrackets())
 	{
 		throw ConfigException(
@@ -94,8 +110,11 @@ void ConfigParser::parse()
 	}
 	else
 	{
-		std::cout << "curly brackerts correct :)\n";
+		std::cout << "VALID CURLY BRACKETS PAIRS: ✅\n";
 	}
+	
+	MachineStatesOfConfigFile();
+	parserServerBlocks();
 }
 
 /**
@@ -130,7 +149,7 @@ bool ConfigParser::ValidateFilePermissions() const
  * iterate through each line of file.
  * @return
  */
-std::string ConfigParser::CleanFileConfig()
+std::string ConfigParser::CleanFileConfig() const
 {
 	std::ifstream ifs(config_file_path_.c_str());
 	if (!ifs.is_open())
@@ -147,9 +166,9 @@ std::string ConfigParser::CleanFileConfig()
 	while (std::getline(ifs, line))
 	{
 		// ++lineNumber;
-		RemoveComments(line);
-		line = TrimLine(line);
-		line = NormalizeSpaces(line);
+		config::utils::removeComments(line);
+		line = config::utils::trimLine(line);
+		line = config::utils::normalizeSpaces(line);
 		if (line.empty())
 			continue;
 		// logBuffer << "|" << lineNumber << "|" << line << "\n";
@@ -177,6 +196,7 @@ std::string ConfigParser::CleanFileConfig()
 bool ConfigParser::ValidateCurlyBrackets() const
 {
 	int countBrackets = 0;
+
 	for (size_t Index = 0; Index < clean_file_str_.size(); ++Index)
 	{
 		if (clean_file_str_.at(Index) == '{')
@@ -196,110 +216,6 @@ bool ConfigParser::ValidateCurlyBrackets() const
 }
 
 /**
- * if line start wirh '#' remove line
- * @param line
- */
-void ConfigParser::RemoveComments(std::string& line)
-{
-	size_t commentPosition = line.find('#');
-	if (commentPosition != std::string::npos)
-	{
-		line = line.substr(0, commentPosition);
-	}
-}
-
-/**
- * AUX FUNCTION TO DEBUG
- * export config file '.log'
- * remove empty lines and comment lines.
- */
-void ConfigParser::DebugConfigLog() const
-{
-	std::ifstream ifs(config_file_path_.c_str());
-	if (!ifs.is_open())
-	{
-		throw ConfigException(
-			config::errors::cannot_open_file +
-			config_file_path_ +
-			" (in generatePrettyConfigLog)"
-		);
-	}
-
-	std::ofstream logFile(config::paths::log_file.c_str());
-	if (!logFile.is_open())
-	{
-		std::cerr << "Warning: Could not open/create pretty log file: ";
-		return;
-	}
-
-	logFile << "=== Pretty print of configuration file ===\n";
-	logFile << "File: " << config_file_path_ << "\n";
-	logFile << "Generated: " << __DATE__ << " " << __TIME__ << "\n";
-	logFile << "----------------------------------------\n\n";
-
-	std::string line;
-	size_t lineNum = 0;
-	while (std::getline(ifs, line))
-	{
-		++lineNum;
-		RemoveComments(line);
-		line = TrimLine(line);
-		if (line.empty())
-			continue;
-		logFile << lineNum << "|" << line << "\n";
-	}
-	ifs.close();
-}
-
-/**
- * remove includes: space, tab, newline and carriage return
- * @param line The string to trim
- * @return New string without leading/trailing whitespace
- * 
- *   "  hello  " -> "hello"
- *   "\t\ntest\r\n" -> "test"
- */
-std::string ConfigParser::TrimLine(const std::string& line)
-{
-	const std::string whitespace = "\t\n\r";
-
-	const size_t start = line.find_first_not_of(whitespace);
-	if (start == std::string::npos)
-	{
-		return "";
-	}
-	const size_t end = line.find_last_not_of(whitespace);
-	return line.substr(start, end - start + 1);
-}
-
-struct IsConsecutiveSpace
-{
-	bool operator()(char a, char b) const { return a == ' ' && b == ' '; }
-};
-
-std::string ConfigParser::RemoveSpacesAndTabs(std::string& line)
-{
-	line.erase(std::unique(line.begin(), line.end(), IsConsecutiveSpace()),
-				line.end());
-	return line;
-}
-
-std::string ConfigParser::NormalizeSpaces(const std::string& line)
-{
-	std::stringstream ss(line);
-	std::string word;
-	std::string result;
-
-	while (ss >> word)
-	{
-		if (!result.empty())
-			result += " ";
-		result += word;
-	}
-	return result;
-}
-
-/**
  * la idea es que dependiendo de que estado se encuentre se actualize el enum,
  * asi saber cuando esta en un bloque de server o location o fuera de bloque
  *
@@ -310,7 +226,7 @@ std::string ConfigParser::NormalizeSpaces(const std::string& line)
 void ConfigParser::MachineStatesOfConfigFile()
 {
 	if (clean_file_str_.empty())
-		return ;
+		return;
 
 	extractServerBlock(clean_file_str_, "server");
 }
@@ -352,6 +268,8 @@ void ConfigParser::extractServerBlock(const std::string& content,
 		// Extract the complete server block
 		std::string getBlock = content.
 			substr(currentPos, braceEnd - currentPos);
+
+
 		raw_server_blocks_.push_back(getBlock);
 		currentPos = braceEnd;
 	}
@@ -365,87 +283,114 @@ void ConfigParser::parserServerBlocks()
 	{
 		ServerConfig server = parseServerBlock(raw_server_blocks_[i]);
 		servers_.push_back(server);
-		std::cout << "Parsing Block " << i + 1 << " [OK]\n";
+		// std::cout << "Parsing Block " << i + 1 << " [OK]\n";
 	}
 }
 
-ServerConfig ConfigParser::parseServerBlock(const std::string& block)
+ServerConfig ConfigParser::parseServerBlock(const std::string& blockContent)
 {
-	ServerConfig serverConfig;
-	LocationConfig currentLocation;
-	config::ParserState state = config::IN_SERVER;
-	
-	std::stringstream ss(block);
+	ServerConfig server;
+	std::stringstream ss(blockContent);
 	std::string line;
 
-	while (std::getline(ss, line))
+	while (getline(ss, line))
 	{
-		RemoveComments(line);
-		line = TrimLine(line);
-		if (line.empty()) continue;
+		// 1. basic clean
+		line = config::utils::trimLine(line);
+		if (line.empty() || line[0] == '#')
+			continue;
 
+		// 2. Tokenization
 		std::vector<std::string> tokens;
-		std::stringstream ss_line(line);
-		std::string token;
-		while (ss_line >> token) tokens.push_back(token);
+		std::string directive = tokens[0];
 
-		if (state == config::IN_SERVER)
+		// 3. Dispatcher (Decidir qué hacer)
+		if (directive == config::section::listen)
 		{
-			if (tokens[0] == "server" && tokens[1] == "{") continue; // Inicio de bloque
-			if (tokens[0] == "}") break; // Fin de server
-
-			if (tokens[0] == "listen")
+			server.setPort(atoi(tokens[1].c_str()));
+		}
+		else if (directive == config::section::host)
+		{
+			//	remove ';'
+			server.setHost(config::utils::removeSemicolon(tokens[1]));
+		}
+		else if (directive == config::section::error_page)
+		{
+			// Lógica especial para múltiples códigos de error
+			// error_page 404 500 /error.html;
+			// error_page 404 /404.html;
+			// error_page 500 502 503 504 /50x.html;
+			if (tokens.size() >= 3)
 			{
-				serverConfig.setPort(std::atoi(tokens[1].c_str()));
-				// std::cout << "  Configured Port: " << tokens[1] << "\n";
-			}
-			else if (tokens[0] == "host")
-			{
-				serverConfig.setHost(tokens[1]);
-				// std::cout << "  Configured Host: " << tokens[1] << "\n";
-			}
-			else if (tokens[0] == "location")
-			{
-				state = config::IN_LOCATION;
-				currentLocation = LocationConfig();
-				currentLocation.setPath(tokens[1]);
-				// std::cout << "  >> Entering Location: " << tokens[1] << "\n";
+				std::string path = config::utils::removeSemicolon(tokens.back());
+				for (size_t i = 1; i < tokens.size() - 1; ++i)
+				{
+					server.addErrorPage(std::atoi(tokens[i].c_str()), path);
+				}
 			}
 		}
-		else if (state == config::IN_LOCATION)
+		else if (directive == config::section::location)
 		{
-			if (tokens[0] == "}")
+			std::string locationPath = tokens[1];
+			LocationConfig loc;
+			loc.setPath(locationPath);
+
+			while (std::getline(ss, line))
 			{
-				state = config::IN_SERVER;
-				serverConfig.addLocation(currentLocation);
-				// std::cout << "  << Exiting Location\n";
-				continue;
-			}
-			
-			if (tokens[0] == "root")
-			{
-				currentLocation.setRoot(tokens[1]);
-				// std::cout << "    Location Root: " << tokens[1] << "\n";
-			}
-			else if (tokens[0] == "methods") // example
-			{
-				for (size_t i = 1; i < tokens.size(); ++i)
+				config::utils::removeComments(line);
+				line = config::utils::trimLine(line);
+				if (!line.empty())
 				{
-					std::string method = tokens[i];
-					if (method[method.size()-1] == ';') method = method.substr(0, method.size()-1); 
-					currentLocation.addMethod(method);
+					std::vector<std::string> locTokens = config::utils::split(
+						line, ' ');
+					if (locTokens.empty())
+					{
+						continue;
+					}
+					if (locTokens[0] == "}")
+					{
+						break; // End of location block
+					}
+					if (locTokens[0] == config::section::root)
+					{
+						loc.setRoot(
+							config::utils::removeSemicolon(locTokens[1]));
+					}
+					else if (locTokens[0] == config::section::index)
+					{
+						for (size_t i = 1; i < locTokens.size(); ++i)
+							loc.addIndex(
+								config::utils::removeSemicolon(locTokens[i]));
+					}
+					else if (locTokens[0] == config::section::autoindex)
+					{
+						std::string val = config::utils::removeSemicolon(
+							locTokens[1]);
+						loc.setAutoIndex(val == config::section::autoindexOn);
+					}
+					else if (locTokens[0] == "methods" || locTokens[0] ==
+						"allow_methods")
+					{
+						for (size_t i = 1; i < locTokens.size(); ++i)
+							loc.addMethod(
+								config::utils::removeSemicolon(locTokens[i]));
+					}
+					else if (locTokens[0] == config::section::returnStr) // redirection
+					{
+						// simple support: return 301 /url;
+						if (locTokens.size() >= 3)
+							loc.setRedirect(
+								config::utils::removeSemicolon(locTokens[2]));
+					}
+					else if (locTokens[0] == config::section::uploadStore)
+					{
+						loc.setUploadStore(
+							config::utils::removeSemicolon(locTokens[1]));
+					}
 				}
-				// std::cout << "    Location Methods: " << tokens[1] << "\n";
 			}
-			else if (tokens[0] == "index")
-			{
-				currentLocation.setIndex(tokens[1]);
-			}
-			else if (tokens[0] == "autoindex")
-			{
-				currentLocation.setAutoIndex(tokens[1] == "on");
-			}
+			server.addLocation(loc);
 		}
 	}
-	return serverConfig;
+	return server;
 }

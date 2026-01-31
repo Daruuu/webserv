@@ -1,15 +1,16 @@
 #ifndef WEBSERV_SERVERCONFIG_HPP
 #define WEBSERV_SERVERCONFIG_HPP
 
+#include <iostream>
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
 class LocationConfig;
 
 /**
  * ServerConfig stores configuration for one server { } block
- * 
+ *
  * Corresponds to nginx-like config:
  * server {
  *     listen 8080;
@@ -23,40 +24,66 @@ class LocationConfig;
 class ServerConfig
 {
 private:
-	int listen_port_;	// listen 8080
-	std::string host_address_;	// host 127.0.0.1
-	std::string server_name_;	// (optional ??)
-	size_t max_body_size_;                         // max is 1048576 (bytes)
-	std::map<int, std::string> error_pages_;       // Map: HTTP code -> file path | Error pages: error_page 404 /404.html
-	std::vector<LocationConfig> location_configs_; // All location { } blocks
+	int listen_port_; // listen 8080
+	std::string host_address_; // host 127.0.0.1
+	std::string server_name_; // (optional ??)
+	std::string root_; //	root server
+	std::string index_; //	root server
+	size_t max_body_size_; // max is 1048576 (bytes)
+	std::map<int, std::string> error_pages_;
+	// Error pages: error_page 404 /404.html
+	std::vector<LocationConfig> location_; // All location { } blocks
 
 public:
 	ServerConfig();
 	ServerConfig(const ServerConfig& other);
 	ServerConfig& operator=(const ServerConfig& other);
 	~ServerConfig();
-	
-	// Getters
-	int getPort() const;
-	const std::string& getHost() const;
-	const std::string& getServerName() const;
-	size_t getMaxBodySize() const;
-	const std::map<int, std::string>& getErrorPages() const;
-	const std::vector<LocationConfig>& getLocations() const;
-	
+
+	// Validation
+	// bool isValid() const;
+
 	// Setters
 	void setPort(int port);
 	void setHost(const std::string& host);
 	void setServerName(const std::string& name);
+	void setRoot(const std::string& root);
+	void setIndex(const std::string& index);
 	void setMaxBodySize(size_t size);
 	void addErrorPage(int code, const std::string& path);
 	void addLocation(const LocationConfig& location);
-	
-	// Validation
-	bool isValid() const;
-	
+
+	// Getters
+	int getPort() const;
+	const std::string& getHost() const;
+	const std::string& getServerName() const;
+	const std::string& getRoot() const;
+	const std::string& getIndex() const;
+	size_t getMaxBodySize() const;
+	const std::map<int, std::string>& getErrorPages() const;
+	const std::vector<LocationConfig>& getLocations() const;
+
 	// Debug
 	void print() const;
+
+	// Friend function for logging/printing (Hidden Friend)
+	friend std::ostream& operator<<(std::ostream& os,
+									const ServerConfig& config)
+	{
+		os << "Server Config:" << "\n"
+			<< "  Port: " << config.getPort() << "\n"
+			<< "  Host: " << config.getHost() << "\n"
+			<< "  Name: " << config.getServerName() << "\n";
+
+		std::map<int, std::string>::const_iterator it;
+
+		for (it = config.error_pages_.begin(); it != config.error_pages_.end();
+			++it)
+		{
+			os << "  Error " << it->first << ": " << it->second << "\n";
+		}
+		return os;
+	}
 };
 
-#endif //WEBSERV_SERVERCONFIG_HPP
+#endif // WEBSERV_SERVERCONFIG_HPP
