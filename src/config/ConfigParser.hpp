@@ -20,6 +20,7 @@ public:
 	void parse();
 
 	const std::vector<ServerConfig>& getServers() const;
+	void exportToLogFile(std::string fileContent, std::string pathToExport);
 
 private:
 	std::string config_file_path_;

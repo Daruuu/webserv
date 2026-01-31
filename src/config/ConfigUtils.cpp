@@ -143,7 +143,7 @@ namespace debug
 			);
 		}
 
-		std::ofstream logFile(config::paths::log_file.c_str());
+		std::ofstream logFile(config::paths::log_file_config.c_str());
 		if (!logFile.is_open())
 		{
 			std::cerr << "Warning: Could not open/create pretty log file: ";

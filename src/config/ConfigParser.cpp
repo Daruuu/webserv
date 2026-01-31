@@ -65,6 +65,13 @@ const std::vector<ServerConfig>& ConfigParser::getServers() const
 	return servers_;
 }
 
+void ConfigParser::exportToLogFile(std::string fileContent, std::string pathToExport)
+{
+	std::ofstream log((pathToExport.data()));
+	log << fileContent;
+	log.close();
+}
+
 /**
  * main function of parsing
  *
@@ -76,24 +83,34 @@ void ConfigParser::parse()
 		throw ConfigException(
 			config::errors::invalid_extension + config_file_path_);
 	}
+	else
+	{
+		std::cout << "VALID FILE EXTENSION: ✅\n";
+	}
 	if (!ValidateFilePermissions())
 	{
 		throw ConfigException(
 			config::errors::cannot_open_file + config_file_path_);
 	}
+	else
+	{
+		std::cout << "VALID FILE PERMISSIONS: ✅\n";
+	}
 
 	clean_file_str_ = CleanFileConfig();
-	// std::ofstream log(config::paths::log_file.data());
-	std::ofstream log(config::paths::log_file.data());
-	log << clean_file_str_;
-	log.close();
+	exportToLogFile(clean_file_str_, config::paths::log_file_config);
 
 	// std::cout << "CLEANFILESTR in PARSE:\n" << clean_file_str_.c_str();
 
+	//TODO: need to fix error order of brackets: '} {' should be error but now is not a error.
 	if (!ValidateCurlyBrackets())
 	{
 		throw ConfigException(
 			"Invalid number of curly brackets " + config_file_path_);
+	}
+	else
+	{
+		std::cout << "VALID CURLY BRACKETS PAIRS: ✅\n";
 	}
 	
 	MachineStatesOfConfigFile();
@@ -251,6 +268,8 @@ void ConfigParser::extractServerBlock(const std::string& content,
 		// Extract the complete server block
 		std::string getBlock = content.
 			substr(currentPos, braceEnd - currentPos);
+
+
 		raw_server_blocks_.push_back(getBlock);
 		currentPos = braceEnd;
 	}
