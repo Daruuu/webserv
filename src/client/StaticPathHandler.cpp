@@ -21,6 +21,7 @@ static bool readFileToBody(const std::string& path, std::vector<char>& out)
 
 bool handleStaticPath(const HttpRequest& request,
                       const ServerConfig* server,
+                      const LocationConfig* location,
                       const std::string& path,
                       std::vector<char>& body,
                       HttpResponse& response)
@@ -34,29 +35,50 @@ bool handleStaticPath(const HttpRequest& request,
 
     if (S_ISDIR(st.st_mode))
     {
-        // 1) Buscar index por defecto (placeholder hasta getters de config).
-        std::string indexPath = path;
-        if (!indexPath.empty() && indexPath[indexPath.size() - 1] != '/')
-            indexPath += "/";
-        indexPath += "index.html";
+        std::vector<std::string> indexes;
+        if (location)
+            indexes = location->getIndexes();
+        if (indexes.empty() && server && !server->getIndex().empty())
+            indexes.push_back(server->getIndex());
+        if (indexes.empty())
+            indexes.push_back("index.html");
 
-        struct stat idx;
-        if (stat(indexPath.c_str(), &idx) == 0 && S_ISREG(idx.st_mode))
+        bool foundIndex = false;
+        std::string indexPath;
+        for (size_t i = 0; i < indexes.size(); ++i)
+        {
+            indexPath = path;
+            if (!indexPath.empty() && indexPath[indexPath.size() - 1] != '/')
+                indexPath += "/";
+            indexPath += indexes[i];
+
+            struct stat idx;
+            if (stat(indexPath.c_str(), &idx) == 0 && S_ISREG(idx.st_mode))
+            {
+                foundIndex = true;
+                break;
+            }
+        }
+
+        if (foundIndex)
         {
             if (!readFileToBody(indexPath, body))
             {
                 buildErrorResponse(response, request, 403, false, server);
                 return true;
             }
+            return false;
         }
-        else
+
+        if (location && location->getAutoIndex())
         {
-            // 2) Autoindex (pendiente de getters de LocationConfig)
-            // TODO: if (location->getAutoIndex()) { generar listado y responder 200 }
-            buildErrorResponse(response, request, 403, false, server);
+            // TODO: generar listado de directorio (autoindex).
+            buildErrorResponse(response, request, 501, false, server);
             return true;
         }
-        return false;
+
+        buildErrorResponse(response, request, 403, false, server);
+        return true;
     }
 
     if (!S_ISREG(st.st_mode))

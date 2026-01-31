@@ -4,12 +4,14 @@
 #include "../http/HttpRequest.hpp"
 #include "../http/HttpResponse.hpp"
 #include "../config/ServerConfig.hpp"
+#include "../config/LocationConfig.hpp"
 
 #include <string>
 #include <vector>
 
 bool handleStaticPath(const HttpRequest& request,
                       const ServerConfig* server,
+                      const LocationConfig* location,
                       const std::string& path,
                       std::vector<char>& body,
                       HttpResponse& response);

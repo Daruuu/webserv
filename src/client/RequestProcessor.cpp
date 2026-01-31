@@ -80,7 +80,31 @@ namespace
 		//   if uri empieza por path y (path == "/" o uri[path.size()] == '/'):
 		//       si path.size() > best -> best = path.size(); bestLoc = &location;
 		// return bestLoc;
-		(void)uri;
+		size_t bestLen = 0;
+		const LocationConfig* bestLoc = 0;
+
+		for (size_t i = 0; i < locations.size(); ++i)
+		{
+			const std::string& path = locations[i].getPath();
+			if (path.empty())
+				continue;
+			if (uri.compare(0, path.size(), path) == 0)
+			{
+				if (path == "/" || uri.size() == path.size()
+					|| uri[path.size()] == '/')
+				{
+					if (path.size() > bestLen)
+					{
+						bestLen = path.size();
+						bestLoc = &locations[i];
+					}
+				}
+			}
+		}
+
+		if (bestLoc)
+			return bestLoc;
+
 		//por defecto, usar la primera location.
 		return &locations[0];
 	}
@@ -97,19 +121,19 @@ namespace
 									const std::string& uri)
 	{
 		std::string root = "./www";
-		// TODO: usar getters cuando existan:
-		// if (location) root
-		//       root = location->getRoot();
-		// if (root.empty())
-		//      root = server.getRoot();
+		if (location && !location->getRoot().empty())
+			root = location->getRoot();
+		else if (!server.getRoot().empty())
+			root = server.getRoot();
 
 		std::string path = root;
-		if (!path.empty() && path[path.size() - 1] != '/' && !uri.empty() && uri
-			[0] != '/')
+		if (!path.empty() && path[path.size() - 1] == '/' && !uri.empty()
+			&& uri[0] == '/')
+			path.erase(path.size() - 1);
+		else if (!path.empty() && path[path.size() - 1] != '/' && !uri.empty()
+			&& uri[0] != '/')
 			path += "/";
 		path += uri;
-		(void)server;
-		(void)location;
 		return path;
 	}
 
@@ -147,7 +171,8 @@ namespace
 								const LocationConfig* location)
 	{
 		// 1) Redirect -> responder y salir (pendiente de getters de LocationConfig)
-		// TODO: if (!location->getRedirect().empty()) return 301;
+		if (!location->getRedirect().empty())
+			return 301;
 
 		// 2) Metodo permitido
 		if (!location->isMethodAllowed(methodToString(request.getMethod())))
@@ -209,6 +234,13 @@ void RequestProcessor::process(const HttpRequest& request,
 		int validationCode = validateLocation(request, server, location);
 		if (validationCode != 0)
 		{
+			if (validationCode == 301 || validationCode == 302)
+			{
+				body.clear();
+				fillBaseResponse(response, request, validationCode, shouldClose, body);
+				response.setHeader("Location", location->getRedirect());
+				return;
+			}
 			buildErrorResponse(response, request, validationCode, true, server);
 			return;
 		}
@@ -223,7 +255,7 @@ void RequestProcessor::process(const HttpRequest& request,
 			return;
 		}
 
-		if (handleStaticPath(request, server, path_real, body, response))
+		if (handleStaticPath(request, server, location, path_real, body, response))
 			return;
 	}
 	else

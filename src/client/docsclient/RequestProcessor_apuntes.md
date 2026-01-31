@@ -145,4 +145,3 @@ Apuntes extra sobre el flujo correcto (lo que nos recomendaron y ya corregimos):
 7) Construir HttpResponse  
    - status, headers, body  
    Por qué: el Client solo serializa y envía.
-
