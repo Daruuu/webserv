@@ -90,6 +90,9 @@ namespace
 				continue;
 			if (uri.compare(0, path.size(), path) == 0)
 			{
+				//identificamos la raiz, verifiacamos coincidencia exacta,
+				//verificamos que el match termine en una frontera de
+				//directorio eje: /u/perfil    ok! despues de /u hay /
 				if (path == "/" || uri.size() == path.size()
 					|| uri[path.size()] == '/')
 				{
@@ -105,8 +108,10 @@ namespace
 		if (bestLoc)
 			return bestLoc;
 
-		//por defecto, usar la primera location.
+		//TODO por defecto, usar la primera location. o NULL?? duda poruqe si
+		//nos da uno que no existe? que pasaremos a process?? 
 		return &locations[0];
+		//return (0);
 	}
 
 
@@ -239,6 +244,8 @@ void RequestProcessor::process(const HttpRequest& request,
 				body.clear();
 				fillBaseResponse(response, request, validationCode, shouldClose, body);
 				response.setHeader("Location", location->getRedirect());
+				//Header obligatorio: 
+				//Location: http://www.google.com
 				return;
 			}
 			buildErrorResponse(response, request, validationCode, true, server);
