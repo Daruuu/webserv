@@ -91,7 +91,14 @@ switch (_state)
 ## 8) Diagrama en draw.io
 ![Flujo del parser (draw.io)](docshttp/Webserver-Flujo%20PARSER%20BODY%20.drawio.svg)
 
-## 9) Lo que implementé (mi parte)
+## 9) Presentaciones y apuntes
+Material adicional de mi parte para entender HTTP:
+
+- [Apuntes de HTTP y Cookies](../../docs/HTTP_APUNTES.md)
+- [Guía de flujo general](../../docs/GUIA_FLUJO.md)
+- [Diagrama simple](../../docs/DIAGRAMA_SIMPLE.md)
+
+## 10) Lo que implementé (mi parte)
 - Implementé un parser incremental con máquina de estados en `HttpParser`:
   - Entrada principal en `consume()`.
   - Start line en `HttpParserStartLine.cpp`.
