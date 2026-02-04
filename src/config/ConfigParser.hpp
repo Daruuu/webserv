@@ -42,7 +42,8 @@ private:
 	bool ValidateCurlyBrackets() const;
 
 	void extractServerBlocks();
-	void extractRawBlocks(const std::string& content, const std::string& typeOfExtraction);
+	void extractRawBlocks(const std::string& content,
+						const std::string& typeOfExtraction);
 	void parseServers();
 
 	ServerConfig parseServer(const std::string& blockContent);

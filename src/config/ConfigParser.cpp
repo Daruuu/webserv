@@ -6,13 +6,12 @@
 #include <iterator>
 #include <sstream>
 #include <string>
-#include <string>
 
 #include "../common/namespaces.hpp"
 #include "ConfigException.hpp"
 #include "ConfigUtils.hpp"
 
-ConfigParser::ConfigParser() : servers_count_(0)
+ConfigParser::ConfigParser() : servers_count_(0U)
 {
 }
 
@@ -30,9 +29,8 @@ ConfigParser::~ConfigParser()
 ConfigParser::ConfigParser(const ConfigParser& other)
 	: config_file_path_(other.config_file_path_),
 	servers_count_(other.servers_count_),
-	raw_server_blocks_(other.raw_server_blocks_)
+	raw_server_blocks_(other.raw_server_blocks_), servers_(other.servers_)
 {
-	// servers_ = other.servers_;
 }
 
 ConfigParser& ConfigParser::operator=(const ConfigParser& other)
@@ -41,8 +39,10 @@ ConfigParser& ConfigParser::operator=(const ConfigParser& other)
 	{
 		ConfigParser tmp(other);
 		std::swap(config_file_path_, tmp.config_file_path_);
+		std::swap(clean_file_str_, tmp.clean_file_str_);
 		std::swap(servers_count_, tmp.servers_count_);
-		// std::swap(servers_, tmp.servers_);
+		std::swap(raw_server_blocks_, tmp.raw_server_blocks_);
+		std::swap(servers_, tmp.servers_);
 	}
 	return *this;
 }
