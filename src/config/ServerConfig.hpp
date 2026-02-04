@@ -29,7 +29,7 @@ private:
 	std::string host_address_; // host 127.0.0.1
 	std::string server_name_; // (optional ??)
 	std::string root_; //	root server
-	std::string index_; //	root server
+	std::vector<std::string> index_vector_; //	root server
 	size_t max_body_size_; // max is 1048576 (bytes)
 	std::map<int, std::string> error_pages_;
 	// Error pages: error_page 404 /404.html
@@ -52,7 +52,7 @@ public:
 	void setHost(const std::string& host);
 	void setServerName(const std::string& name);
 	void setRoot(const std::string& root);
-	void setIndex(const std::string& index);
+	void addIndex(const std::string& index);
 	void setMaxBodySize(size_t size);
 	void addErrorPage(int code, const std::string& path);
 	void addLocation(const LocationConfig& location);
@@ -62,7 +62,7 @@ public:
 	const std::string& getHost() const;
 	const std::string& getServerName() const;
 	const std::string& getRoot() const;
-	const std::string& getIndex() const;
+	const std::vector<std::string>& getIndexVector() const;
 	size_t getMaxBodySize() const;
 	const std::map<int, std::string>& getErrorPages() const;
 	const std::vector<LocationConfig>& getLocations() const;

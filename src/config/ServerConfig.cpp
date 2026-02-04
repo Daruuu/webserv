@@ -16,7 +16,7 @@ ServerConfig::ServerConfig(const ServerConfig& other) :
 	host_address_(other.host_address_),
 	server_name_(other.server_name_),
 	root_(other.root_),
-	index_(other.index_),
+	// index_(other.index_),
 	max_body_size_(other.max_body_size_),
 	error_pages_(other.error_pages_),
 	location_(other.location_)
@@ -30,7 +30,7 @@ ServerConfig& ServerConfig::operator=(const ServerConfig& other)
 		listen_port_ = other.listen_port_;
 		host_address_ = other.host_address_;
 		root_ = other.root_;
-		index_ = other.index_;
+		// index_ = other.index_;
 		server_name_ = other.server_name_;
 		max_body_size_ = other.max_body_size_;
 		error_pages_ = other.error_pages_;
@@ -67,9 +67,9 @@ void ServerConfig::setRoot(const std::string& root)
 	root_ = root;
 }
 
-void ServerConfig::setIndex(const std::string& index)
+void ServerConfig::addIndex(const std::string& index)
 {
-	index_ = index;
+	index_vector_.push_back(index);
 }
 
 void ServerConfig::setMaxBodySize(size_t size)
@@ -113,9 +113,9 @@ const std::string& ServerConfig::getRoot() const
 	return root_;
 }
 
-const std::string& ServerConfig::getIndex() const
+const std::vector<std::string>& ServerConfig::getIndexVector() const
 {
-	return index_;
+	return index_vector_;
 }
 
 size_t ServerConfig::getMaxBodySize() const
