@@ -91,3 +91,4 @@ webserver
 /local
 /build
 /config/logs/
+.cache
