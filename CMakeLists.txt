@@ -76,6 +76,7 @@ if(BUILD_TESTING AND EXISTS "${CMAKE_SOURCE_DIR}/tests/unit")
     enable_testing()
     include_directories(${CMAKE_SOURCE_DIR}/lib)
     add_subdirectory(tests/unit)
+	add_subdirectory(tests) # build tests
     add_executable(Testing tests/unit/main_test.cpp)
 
     if(CONFIG_ENABLED)

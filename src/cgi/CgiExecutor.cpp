@@ -47,6 +47,17 @@ HttpResponse CgiExecutor::execute(const HttpRequest &request,
     // Timeout safety
     alarm(5);
 
+    // Change to script directory for relative path access
+    // Required by subject: "The CGI should be run in the correct directory for relative path file access"
+    size_t last_slash = script_path.find_last_of('/');
+    if (last_slash != std::string::npos) {
+      std::string script_dir = script_path.substr(0, last_slash);
+      if (chdir(script_dir.c_str()) == -1) {
+        perror("chdir failed");
+        exit(1);
+      }
+    }
+
     // Prepare Env
     std::map<std::string, std::string> env_map =
         prepareEnvironment(request, script_path);
@@ -175,22 +186,77 @@ CgiExecutor::prepareEnvironment(const HttpRequest &request,
                                 const std::string &script_path) {
   std::map<std::string, std::string> env;
 
+  // ============================================================================
+  // Step 1: Core CGI/HTTP Variables
+  // ============================================================================
+  // These are required by CGI/1.1 specification (RFC 3875)
+  
   env["GATEWAY_INTERFACE"] = "CGI/1.1";
   env["SERVER_PROTOCOL"] = "HTTP/1.1";
   env["SERVER_SOFTWARE"] = "Webserv/1.0";
   env["REQUEST_METHOD"] = request.getMethod();
-  env["SCRIPT_FILENAME"] = script_path;
-  env["SCRIPT_NAME"] = script_path; // Relative path?
-  env["QUERY_STRING"] = "";         // TODO: parse query string from URI
-  env["REMOTE_ADDR"] = "127.0.0.1"; // TODO: pass client IP
 
-  // Headers
+  // ============================================================================
+  // Step 2: Path and Script Variables
+  // ============================================================================
+  // SCRIPT_FILENAME: Full path to the script being executed
+  // SCRIPT_NAME: The original URI path (without query string or fragments)
+  
+  env["SCRIPT_FILENAME"] = script_path;
+  
+  // Extract SCRIPT_NAME from URI (path component, no query string)
+  std::string uri = request.getUri();
+  size_t question_mark = uri.find('?');
+  std::string script_name = (question_mark != std::string::npos) 
+    ? uri.substr(0, question_mark) 
+    : uri;
+  env["SCRIPT_NAME"] = script_name;
+
+  // ============================================================================
+  // Step 3: Query String
+  // ============================================================================
+  // QUERY_STRING: Everything after the '?' in the URI
+  // Example: URI="/cgi-bin/test.py?foo=bar&baz=qux" → QUERY_STRING="foo=bar&baz=qux"
+  // If no query string, QUERY_STRING must be empty (not unset)
+  // CGI scripts check this to know whether to parse GET parameters
+  
+  std::string query_string = "";
+  if (question_mark != std::string::npos && question_mark + 1 < uri.length()) {
+    query_string = uri.substr(question_mark + 1);
+  }
+  env["QUERY_STRING"] = query_string;
+
+  // ============================================================================
+  // Step 4: Content/Body Information
+  // ============================================================================
+  // CONTENT_LENGTH: Number of bytes in the request body (only for POST/PUT)
+  // CONTENT_TYPE: MIME type of the request body (from Content-Type header)
+  // These allow CGI to know if there's POST data and what format it's in
+  
   env["CONTENT_LENGTH"] = StringUtils::toString(request.getBody().length());
   std::string ct = request.getHeader("content-type");
   if (!ct.empty())
     env["CONTENT_TYPE"] = ct;
 
-  // Pass other headers as HTTP_...
+  // ============================================================================
+  // Step 5: Client/Server Connection Information
+  // ============================================================================
+  // REMOTE_ADDR: Client IP address
+  // REQUEST_URI: Original URI with query string and fragments
+  // These let the CGI know who connected and what they requested
+  
+  env["REMOTE_ADDR"] = "127.0.0.1"; // TODO: Extract from socket in Client
+  env["REQUEST_URI"] = uri;
+
+  // ============================================================================
+  // Step 6: HTTP Request Headers
+  // ============================================================================
+  // All HTTP headers are passed as HTTP_* environment variables
+  // Header names are uppercased and dashes converted to underscores
+  // Example: "Content-Type" header becomes HTTP_CONTENT_TYPE
+  // Example: "X-Custom-Header" becomes HTTP_X_CUSTOM_HEADER
+  // This allows CGI to access custom headers sent by the client
+  
   const std::map<std::string, std::string> &headers = request.getHeaders();
   for (std::map<std::string, std::string>::const_iterator it = headers.begin();
        it != headers.end(); ++it) {

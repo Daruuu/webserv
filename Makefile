@@ -42,7 +42,8 @@ SRC_FILES = $(SRC_DIR)/main.cpp \
 			$(SRC_DIR)/http/HttpParser.cpp \
 			$(SRC_DIR)/http/HttpResponse.cpp \
 			$(SRC_DIR)/client/RequestProcessor.cpp \
-			$(SRC_DIR)/cgi/CgiExecutor.cpp 
+			$(SRC_DIR)/cgi/CgiExecutor.cpp \
+			$(SRC_DIR)/cgi/CgiHandler.cpp 
 
 
 #OBJ_FILES = $(SRC_FILES:%.cpp=$(BUILD_DIR)/%.o) # works with vpath
