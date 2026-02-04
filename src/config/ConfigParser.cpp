@@ -466,8 +466,11 @@ ServerConfig ConfigParser::parseServer(const std::string& blockContent)
 					}
 					else if (locTokens[0] == config::section::autoindex)
 					{
-						std::string val = config::utils::removeSemicolon(
-							locTokens[1]);
+						std::string val = config::utils::removeSemicolon(locTokens[1]);
+						if (val != config::section::autoindex_on || val != config::section::autoindex_off)
+						{
+							throw ConfigException(config::errors::invalid_autoindex);
+						}
 						loc.setAutoIndex(val == config::section::autoindex_on);
 					}
 					else if (locTokens[0] == config::section::methods ||

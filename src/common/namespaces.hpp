@@ -49,6 +49,9 @@ namespace config
 		static const std::string invalid_characters_in_upload_directive = "Invalid characters in upload_store path: ";
 
 		static const std::string empty_path_in_upload_directive= "Empty path in 'upload_store' directive";
+		static const std::string invalid_port_range= "Invalid port: must be 1 - 65535";
+		static const std::string invalid_http_status_code = "Invalid HTTP status code.";
+		static const std::string invalid_autoindex= "autoindex must be 'on' or 'off'.";
 	}
 
 	namespace section
@@ -78,7 +81,9 @@ namespace config
 		// 2. Preferential prefix (prefix más largo, pero detiene la búsqueda de regex si coincide)
 		// location ^~ /images/ { ... } → no chequea regex después
 		static const std::string preferential_prefix_modifier = "^~";
+
 		static const int default_return_code= 302;
+		static const int max_port = 65535;
 	}
 
 	enum ParserState
