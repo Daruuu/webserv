@@ -286,6 +286,52 @@ void ConfigParser::parseAllServerBlocks()
 	}
 }
 
+void ConfigParser::parseListen(ServerConfig& server, const std::vector<std::string>& tokens)
+{
+	if (tokens.size() < 2)
+	{
+		throw ConfigException("Missing argument for listen"); // Pequeña validación extra
+	}
+	std::string value = config::utils::removeSemicolon(tokens[1]);
+	size_t pos = value.find(':');
+
+	// std::cout << "current directive: [" << directive << "]" << std::endl;
+	// std::cout << "value [" << value << "]" << std::endl;
+
+	if (pos != std::string::npos)
+	{
+		// Case: IP:PORT (127.0.0.1:8080)
+		std::string ip = value.substr(0, pos);
+		std::string port = value.substr(pos + 1);
+
+		if (ip.find_first_not_of("0123456789") == std::string::npos)
+		{
+			server.setPort(config::utils::stringToInt(ip));
+			server.setHost(port);
+		}
+		else
+		{
+			server.setHost(ip);
+			server.setPort(config::utils::stringToInt(port));
+		}
+	}
+	else
+	{
+		// Caso: PORT (8080) or only HOST (localhost)
+		// Simple heurística: Si tiene digitos es puerto, sino host
+		if (value.find_first_not_of("0123456789") == std::string::npos)
+		{
+			server.setPort(config::utils::stringToInt(value));
+		}
+		else
+		{
+			//TODO: move to cosntant
+			server.setHost(value);
+			server.setPort(80); // DEFAULT ?
+		}
+	}
+}
+
 ServerConfig ConfigParser::parseSingleServerBlock(const std::string& blockContent)
 {
 	ServerConfig server;
@@ -297,22 +343,9 @@ ServerConfig ConfigParser::parseSingleServerBlock(const std::string& blockConten
 		int indexTokens = 0;
 		line = config::utils::trimLine(line);
 
-		// std::cout << colors::blue << "currentline: [" << line << "]\n" <<
-		// colors::reset;
-		// 2. Tokenization
 		std::vector<std::string> tokens = config::utils::tokenize(line);
 		if (tokens.empty())
 			continue;
-
-		// std::cout << "tokens in line:\n";
-		/**
-		for (size_t i = 0; i < tokens.size(); ++i)
-		{
-						std::cout << "token[" << i << "]: |" << colors::yellow <<
-		tokens. at(i)
-										<< colors::reset << "|\n";
-		}
-		*/
 
 		const std::string& directive = tokens[indexTokens];
 
@@ -322,44 +355,7 @@ ServerConfig ConfigParser::parseSingleServerBlock(const std::string& blockConten
 		// 8080:192.178.1.1
 		if (directive == config::section::listen)
 		{
-			std::string value =
-				config::utils::removeSemicolon(tokens[indexTokens + 1]);
-			size_t pos = value.find(':');
-
-			// std::cout << "current directive: [" << directive << "]" << std::endl;
-			// std::cout << "value [" << value << "]" << std::endl;
-
-			if (pos != std::string::npos)
-			{
-				// Case: IP:PORT (127.0.0.1:8080)
-				std::string ip = value.substr(0, pos);
-				std::string port = value.substr(pos + 1);
-
-				if (ip.find_first_not_of("0123456789") == std::string::npos)
-				{
-					server.setPort(config::utils::stringToInt(ip));
-					server.setHost(port);
-				}
-				else
-				{
-					server.setHost(ip);
-					server.setPort(config::utils::stringToInt(port));
-				}
-			}
-			else
-			{
-				// Caso: PORT (8080) or only HOST (localhost)
-				// Simple heurística: Si tiene digitos es puerto, sino host
-				if (value.find_first_not_of("0123456789") == std::string::npos)
-				{
-					server.setPort(config::utils::stringToInt(value));
-				}
-				else
-				{
-					server.setHost(value);
-					server.setPort(80); // DEFAULT ?
-				}
-			}
+			parseListen(server, tokens);
 		}
 		else if (directive == config::section::server_name)
 		{

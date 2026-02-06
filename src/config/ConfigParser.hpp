@@ -45,6 +45,11 @@ private:
 						const std::string& typeOfExtraction);
 
 	void parseAllServerBlocks();
+	void parseListen(ServerConfig& server,
+					const std::vector<std::string>& tokens);
+	bool parseListen(std::string& line, int& indexTokens,
+					std::vector<std::string>& tokens,
+					const std::string& directive_copy);
 
 	//	TODO: move to serverconfig like function()
 	ServerConfig parseSingleServerBlock(const std::string& blockContent);
