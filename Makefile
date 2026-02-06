@@ -38,6 +38,8 @@ SRC_FILES = $(SRC_DIR)/main.cpp \
 			$(SRC_DIR)/client/ErrorUtils.cpp \
 		$(SRC_DIR)/client/ResponseUtils.cpp \
 		$(SRC_DIR)/client/StaticPathHandler.cpp \
+		$(SRC_DIR)/client/RequestProcessorUtils.cpp \
+		$(SRC_DIR)/client/TemplateUtils.cpp \
 			$(SRC_DIR)/client/RequestProcessor.cpp \
 			$(SRC_DIR)/http/HttpParser.cpp \
 			$(SRC_DIR)/http/HttpParserStartLine.cpp \

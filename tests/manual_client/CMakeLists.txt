@@ -7,6 +7,8 @@ add_executable(manual_client
         ../../src/client/ErrorUtils.cpp
         ../../src/client/ResponseUtils.cpp
         ../../src/client/StaticPathHandler.cpp
+        ../../src/client/RequestProcessorUtils.cpp
+        ../../src/client/TemplateUtils.cpp
         ../../src/client/RequestProcessor.cpp
         ../../src/http/HttpParser.cpp
         ../../src/http/HttpParserStartLine.cpp
@@ -15,6 +17,7 @@ add_executable(manual_client
         ../../src/http/HttpRequest.cpp
         ../../src/http/HttpResponse.cpp
         ../../src/network/ServerManager.cpp
+        ../../src/cgi/CgiExecutor.cpp
 )
 
 target_include_directories(manual_client PRIVATE

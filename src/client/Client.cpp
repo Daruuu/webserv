@@ -121,6 +121,30 @@ void Client::buildResponse() {
     //depende del status que tengas respondemos una cosa u otra...
     //serializar a raw bytes para el envio 
     const HttpRequest& request = _parser.getRequest();
+    // TODO (CGI flujo):
+    // 1) RequestProcessor decide si es CGI o estatico.
+    // 2) Si es CGI, el Client debe crear el proceso CGI (CgiExecutor)
+    //    y registrar el pipe de salida en epoll via ServerManager.
+    // 3) ServerManager recibe eventos del pipe y llama de vuelta al Client
+    //    para leer la salida CGI y construir HttpResponse.
+    //
+    // Ejemplo:
+    // if (requestIsCgi(request)) {
+    //     CgiExecutor exec;
+    //     CgiProcess* proc = exec.executeAsync(request, scriptPath, interpreterPath);
+    //     if (proc) {
+    //         serverManager->registerCgiPipe(proc->getPipeOut(), EPOLLIN, this);
+    //         // Guardar proc en el Client para leer salida luego
+    //         // this->_cgiProcess = proc;
+    //     } else {
+    //         buildErrorResponse(_response, request, 500, true, /*server*/0);
+    //     }
+    //     return;
+    // }
+    // else {
+    //     _processor.process(request, _configs, _listenPort,
+    //                        _parser.getState() == ERROR, _response);
+    // }
     _processor.process(request, _configs, _listenPort, _parser.getState() == ERROR, _response);
 }
 

@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include <unistd.h>
 
+#define CLIENT_TIMEOUT_SECONDS 60
+
 ServerManager::ServerManager(const std::vector< ServerConfig >* configs)
     : configs_(configs) {
   std::set< int > bound_ports;
@@ -109,7 +111,7 @@ void ServerManager::checkTimeouts() {
 
   // Iterate over all clients and identify those who timed out
   // TODO: Make timeout configurable via ServerBlock
-  double timeout_seconds = 60.0;
+  double timeout_seconds = CLIENT_TIMEOUT_SECONDS;
 
   for (std::map< int, Client* >::iterator it = clients_.begin();
        it != clients_.end(); ++it) {

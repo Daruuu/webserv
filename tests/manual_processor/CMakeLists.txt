@@ -6,6 +6,8 @@ add_executable(manual_request_processor
         ../../src/client/ErrorUtils.cpp
         ../../src/client/ResponseUtils.cpp
         ../../src/client/StaticPathHandler.cpp
+        ../../src/client/RequestProcessorUtils.cpp
+        ../../src/client/TemplateUtils.cpp
         ../../src/client/RequestProcessor.cpp
         ../../src/http/HttpRequest.cpp
         ../../src/http/HttpResponse.cpp

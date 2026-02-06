@@ -1,10 +1,12 @@
 #include "StaticPathHandler.hpp"
 
 #include "ErrorUtils.hpp"
+#include "TemplateUtils.hpp"
 
 #include <dirent.h>
 #include <fstream>
 #include <sstream>
+#include <utility>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -33,15 +35,7 @@ static std::vector<char> generateAutoIndexBody(const std::string& dirPath,
     if (base[base.size() - 1] != '/')
         base += "/";
 
-    html << "<!DOCTYPE html>\n"
-         << "<html>\n"
-         << "  <head>\n"
-         << "    <meta charset=\"utf-8\">\n"
-         << "    <title>Index of " << base << "</title>\n"
-         << "  </head>\n"
-         << "  <body>\n"
-         << "    <h1>Index of " << base << "</h1>\n"
-         << "    <ul>\n";
+    std::ostringstream items;
 
     DIR* dir = opendir(dirPath.c_str());
     if (dir) {
@@ -59,18 +53,38 @@ static std::vector<char> generateAutoIndexBody(const std::string& dirPath,
             struct stat st;
             bool isDir = (stat(fullPath.c_str(), &st) == 0 && S_ISDIR(st.st_mode));
 
-            html << "      <li><a href=\"" << base << name;
+            items << "      <li><a href=\"" << base << name;
             if (isDir)
-                html << "/";
-            html << "\">" << name;
+                items << "/";
+            items << "\">" << name;
             if (isDir)
-                html << "/";
-            html << "</a></li>\n";
+                items << "/";
+            items << "</a></li>\n";
         }
         closedir(dir);
     }
 
-    html << "    </ul>\n"
+    std::string tpl;
+    if (loadTemplateFromFile("./www/templates/autoindex.html", tpl))
+    {
+        std::vector< std::pair<std::string, std::string> > vars;
+        vars.push_back(std::make_pair("{{TITLE}}", std::string("Index of ") + base));
+        vars.push_back(std::make_pair("{{ITEMS}}", items.str()));
+        std::string content = renderTemplate(tpl, vars);
+        return std::vector<char>(content.begin(), content.end());
+    }
+
+    html << "<!DOCTYPE html>\n"
+         << "<html>\n"
+         << "  <head>\n"
+         << "    <meta charset=\"utf-8\">\n"
+         << "    <title>Index of " << base << "</title>\n"
+         << "  </head>\n"
+         << "  <body>\n"
+         << "    <h1>Index of " << base << "</h1>\n"
+         << "    <ul>\n"
+         << items.str()
+         << "    </ul>\n"
          << "  </body>\n"
          << "</html>\n";
 
