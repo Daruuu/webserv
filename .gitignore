@@ -93,4 +93,5 @@ webserver
 
 #http tests
 tests/manual_http_parser
-tests/manual_http_request.idea/
+tests/manual_http_request
+.idea/
