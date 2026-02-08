@@ -58,7 +58,7 @@ void ConfigParser::parse() {
 
     clean_file_str_ = preprocessConfigFile();
     config::utils::exportContentToLogFile(clean_file_str_, config::paths::log_file_config);
-    std::cout << "Exporting config file to config-clean.log";
+    std::cout << "Exporting config file to config-clean.log\n";
 
     // TODO: need to fix error order of brackets: '} {' should be error but now is
     if (!validateBalancedBrackets()) {
@@ -253,8 +253,7 @@ void ConfigParser::parseListen(ServerConfig& server, const std::vector< std::str
     /*
     std::cout << "current directive: [" << directive << "]" << std::endl;
     std::cout << "value [" << value << "]" << std::endl;
-
-                    function to check if pattern is correct respect to PORT:IP
+	function to check if pattern is correct respect to PORT:IP
     8080:192.178.1.1
     */
     if (pos != std::string::npos) {
@@ -270,7 +269,7 @@ void ConfigParser::parseListen(ServerConfig& server, const std::vector< std::str
             server.setPort(config::utils::stringToInt(port));
         }
     } else {
-        // Caso: PORT (8080) or only HOST (localhost)
+        // Case: PORT (8080) or only HOST (localhost)
         // Simple heurística: Si tiene digitos es puerto, sino host
         if (value.find_first_not_of("0123456789") == std::string::npos) {
             server.setPort(config::utils::stringToInt(value));
@@ -282,12 +281,10 @@ void ConfigParser::parseListen(ServerConfig& server, const std::vector< std::str
     }
 }
 
-void ConfigParser::parseMaxSizeBody(ServerConfig& server, std::vector< std::string >& tokens) {
+void ConfigParser::parseMaxSizeBody(ServerConfig& server, const std::vector< std::string >& tokens) {
     const std::string& maxSizeStr = config::utils::removeSemicolon(tokens[1]);
     if (!maxSizeStr.empty()) {
         config::utils::removeSemicolon(maxSizeStr);
-        std::cout << "client_max_body_size clean: " << maxSizeStr;
-
         server.setMaxBodySize(config::utils::stringToInt(maxSizeStr));
     }
 }
@@ -339,17 +336,11 @@ void ConfigParser::parseUploadBonus(LocationConfig& loc, std::vector< std::strin
         throw ConfigException(config::errors::invalid_characters_in_upload_directive +
                               uploadPathClean);
     }
-    // TODO: Opcional: podriamos verificar que el directorio existe o se
-    // puede crear
+    // TODO: verificar que el directorio existe o se
     /*
-                                                                                                                                                                    if
-                    (!config::utils::directoryExists(uploadPath))
-                                                                                                                                                                    {
-                                                                                                                                                                                                                                    std::cerr << "Warning:
-                    upload_store directory does not exist: "
-                                                                                                                                                                                                                                                                                                                                                                    << uploadPath;
-                                                                                                                                                                    }
-                                                                                                                                                                    */
+			(!config::utils::directoryExists(uploadPath))
+			upload_store directory does not exist: "uploadPath;}
+    */
     loc.setUploadStore(uploadPathClean);
 }
 
@@ -364,6 +355,7 @@ void ConfigParser::parseReturn(LocationConfig& loc, std::vector< std::string >& 
 
         loc.setRedirectCode(config::section::default_return_code);
         loc.setRedirectUrl(cleanUrl);
+        loc.setRedirectParamCount(1);
     } else if (locTokens.size() == 3) {
         // Caso: return CODE URL;
         int code = config::utils::stringToInt(locTokens[1]);
@@ -379,6 +371,7 @@ void ConfigParser::parseReturn(LocationConfig& loc, std::vector< std::string >& 
         }
         loc.setRedirectCode(code);
         loc.setRedirectUrl(cleanUrl);
+        loc.setRedirectParamCount(2);
     } else {
         throw ConfigException(config::errors::missing_args_in_return);
     }
@@ -448,7 +441,7 @@ void ConfigParser::parseLocationBlock(ServerConfig& server, std::stringstream& s
             }
         } else if (directive == config::section::autoindex) {
             std::string val = config::utils::removeSemicolon(locTokens[1]);
-            if (val != config::section::autoindex_on || val != config::section::autoindex_off) {
+            if (val != config::section::autoindex_on && val != config::section::autoindex_off) {
                 throw ConfigException(config::errors::invalid_autoindex);
             }
             loc.setAutoIndex(val == config::section::autoindex_on);
