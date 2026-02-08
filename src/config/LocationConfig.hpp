@@ -107,6 +107,27 @@ inline std::ostream& operator<<(std::ostream& os, const LocationConfig& location
         }
     }
     os << "\n";
+	// ────────────────────────────────────────────────
+	//           BONUS: CGI Handlers
+	// ────────────────────────────────────────────────
+	os << "\n\t" << config::colors::magenta << config::colors::bold << "CGI Handlers (bonus):" << config::colors::reset << "\n";
+
+	const std::map<std::string, std::string>& cgi = location.getCgiHandlers();  // Necesitas tener este getter
+
+	if (cgi.empty())
+	{
+		os << "\t" << config::colors::yellow << "  CGI: " << config::colors::reset << config::colors::red << "none configured" << config::colors::reset << "\n";
+	}
+	else
+	{
+		std::map<std::string, std::string>::const_iterator it = cgi.begin();
+		for (; it != cgi.end(); ++it)
+		{
+			os << "\t" << config::colors::yellow << "[" << it->first << "]: " << config::colors::reset
+			   << config::colors::green << it->second << config::colors::reset << "\n";
+		}
+	}
+
     return os;
 }
 
