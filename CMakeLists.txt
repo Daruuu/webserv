@@ -14,34 +14,37 @@ set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 add_compile_options(-Wall -Wextra -Werror)
 
 # Add all modules src/
-#include subdirectories of each module in src/
-#include_directories(${CMAKE_SOURCE_DIR}/src)
+add_subdirectory(src/cgi)
+add_subdirectory(src/client)
+add_subdirectory(src/common)
 add_subdirectory(src/config)
-#add_subdirectory(src/network)
+add_subdirectory(src/http)
+add_subdirectory(src/network)
+add_subdirectory(src/utils)
 
 # --- main executable ---
 
-#        src/main.cpp
 add_executable(webserv
-        src/config/mainConfig.cpp
+        src/main.cpp
 )
-add_compile_options(-Wall -Wextra -Werror)
-
-# Definimos la ruta raíz para que los sub-archivos la conozcan
-set(WEBSERV_ROOT ${CMAKE_SOURCE_DIR})
 
 # link libs to executable.
 target_link_libraries(webserv PRIVATE
+        network
+        client
+        cgi
+        http
         config
-#        network
+        utils
+        common
 )
 
 #include_directories(${CMAKE_SOURCE_DIR}/lib)
 # testing (Optional)
 option(BUILD_TESTING "Build the testing tree." ON)
 if(BUILD_TESTING)
-    enable_testing()
-    add_subdirectory(tests/unit)
+        enable_testing()
+        add_subdirectory(tests/unit)
 endif()
 
 #add_executable(Testing tests/unit/main_test.cpp)

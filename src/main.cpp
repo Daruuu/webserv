@@ -1,6 +1,7 @@
 #include "config/ConfigException.hpp"
 #include "config/ConfigParser.hpp"
 #include "network/ServerManager.hpp"
+#include "config/ServerConfig.hpp"
 
 #include <exception>
 #include <fstream>
@@ -8,11 +9,6 @@
 #include <signal.h>
 #include <string>
 #include <vector>
-
-#include "config/ConfigException.hpp"
-#include "config/ConfigParser.hpp"
-#include "config/ServerConfig.hpp"
-#include "network/ServerManager.hpp"
 
 /**
  * Función principal del servidor web
