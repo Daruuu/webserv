@@ -1,78 +1,89 @@
-#pragma once
+#ifndef CLIENT_HPP
+#define CLIENT_HPP
 
-#include "../cgi/CgiProcess.hpp"
+#include <ctime>
+#include <queue>
+#include <string>
+#include <vector>
+
 #include "../config/ServerConfig.hpp"
 #include "../http/HttpParser.hpp"
 #include "../http/HttpRequest.hpp"
 #include "../http/HttpResponse.hpp"
 #include "RequestProcessor.hpp"
-#include <ctime>
-#include <string>
-#include <stdint.h>
 
-// Forward declaration
 class ServerManager;
+class CgiProcess;
+
+// Representa una conexion TCP con un cliente.
+// Se encarga de:
+// - Acumular bytes que vienen del socket.
+// - Pasarlos al HttpParser.
+// - Cuando hay HttpRequest completa, invocar a RequestProcessor.
+// - Acumular la respuesta serializada y enviarla por el socket.
+
+// El cliente no puede leer/escribir sin control: necesita saber en que estado
+// esta para que el bucle principal escuche eventos.
+enum ClientState {
+    STATE_IDLE, // Conexion abierta sin peticion activa (despues de accept).
+    STATE_READING_HEADER,
+    STATE_READING_BODY,
+    STATE_WRITING_RESPONSE,
+    STATE_CLOSED
+};
 
 class Client {
-public:
-  enum State {
-    CONNECTED,
-    READING,
-    WRITING,
-    WAITING_FOR_CGI, // NEW: Waiting for CGI output
-    KEEP_ALIVE,
-    CLOSED
-  };
+  private:
+    Client(const Client&);
+    Client& operator=(const Client&);
 
-  Client(int fd, const std::vector< ServerBlock >* configs);
-  ~Client();
+    int _fd;
+    std::string _inBuffer;  // datos recibidos aún sin procesar
+    std::string _outBuffer; // respuesta lista para enviar (o parcialmente enviada)
+    HttpParser _parser;
+    HttpResponse _response;
+    RequestProcessor _processor;
+    const std::vector< ServerConfig >* _configs;
+    int _listenPort;
+    ClientState _state;
+    time_t _lastActivity; // para gestionar timeouts
+    ServerManager* _serverManager;
+    CgiProcess* _cgiProcess;
+    bool _closeAfterWrite;
+    struct PendingResponse {
+        std::string data;
+        bool closeAfter;
+        PendingResponse(const std::string& d, bool c) :
+              data(d),
+              closeAfter(c) {
+        }
+    };
+    std::queue< PendingResponse > _responseQueue;
 
-  // Core event handlers
-  void handleRead();
-  void handleWrite();
-  void handleCgiOutput(); // Handle CGI output (read)
-  void handleCgiInput();  // Handle CGI input (write)
-  void handleCgiPipe(int pipe_fd, uint32_t events); // Dispatcher
+    // Invocado cuando el parser marca una HttpRequest como completa.
+    bool handleCompleteRequest();
+    void enqueueResponse(const std::vector< char >& data, bool closeAfter);
+    bool startCgiIfNeeded(const HttpRequest& request);
+    void finalizeCgiResponse();
 
-  // CGI management
-  void setCgiProcess(CgiProcess* proc);
-  CgiProcess* getCgiProcess() const;
-  void setServerManager(ServerManager* manager); // NEW: Set server manager for
-                                                 // CGI pipe registration
-  void finalizeCgiResponse();                    // NEW: Send final CGI response
+  public:
+    Client(int fd, const std::vector< ServerConfig >* configs, int listenPort);
+    ~Client();
 
-  // Getters
-  int getFd() const;
-  State getState() const;
-  bool needsWrite() const;
-  time_t getLastActivity() const;
+    // Getters
+    int getFd() const;
+    ClientState getState() const;
+    bool needsWrite() const;
+    time_t getLastActivity() const;
 
-  // Buffer management
-  void appendToReadBuffer(const char* data, size_t size);
+    // Manejo de eventos
+    void handleRead();
+    void handleWrite();
+    void handleCgiPipe(int pipe_fd, size_t events);
+    void setServerManager(ServerManager* serverManager);
 
-private:
-  int fd_;
-  const std::vector< ServerBlock >* configs_;
-  const ServerBlock* active_config_;
-  State state_;
-
-  // Buffers
-  std::string read_buffer_;
-  std::string write_buffer_;
-
-  // Components
-  HttpParser parser_;
-  RequestProcessor processor_;
-
-  // CGI execution (NEW)
-  CgiProcess* cgi_process_;
-  size_t cgi_response_sent_;      // Track how much CGI response we've written
-  ServerManager* server_manager_; // NEW: Reference to server manager for CGI
-                                  // pipe registration
-
-  // Timeouts
-  time_t last_activity_;
-
-  // Helpers
-  void processRequest();
+    // Construccion de respuesta
+    void buildResponse();
 };
+
+#endif // CLIENT_HPP

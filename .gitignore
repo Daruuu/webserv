@@ -90,5 +90,11 @@ dkms.conf
 webserver
 /local
 /build
-/.cache
-compile_commands.json
+
+#http tests
+tests/manual_http_parser
+tests/manual_http_request
+.idea/
+
+/config/logs/
+.cache

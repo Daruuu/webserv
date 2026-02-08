@@ -1,19 +1,17 @@
-#pragma once
+#ifndef WEBSERV_CONFIGEXCEPTION_HPP
+#define WEBSERV_CONFIGEXCEPTION_HPP
 
 #include <exception>
 #include <string>
-#include <unistd.h>
+
 class ConfigException : public std::exception {
-public:
-	ConfigException(const std::string& message);
-	ConfigException(const ConfigException& other); // Needed for throwing
+  private:
+    std::string message_;
 
-	virtual ~ConfigException() throw();
-
-	virtual const char* what() const throw();
-private:
-	std::string message_;
-	
-	ConfigException();
-	ConfigException& operator=(const ConfigException& other);
+  public:
+    explicit ConfigException(const std::string& msg);
+    virtual ~ConfigException() throw();
+    virtual const char* what() const throw();
 };
+
+#endif // WEBSERV_CONFIGEXCEPTION_HPP

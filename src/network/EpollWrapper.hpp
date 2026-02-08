@@ -8,23 +8,23 @@
 #include <vector>
 
 class EpollWrapper {
-public:
-  EpollWrapper();
-  ~EpollWrapper();
+  public:
+    EpollWrapper();
+    ~EpollWrapper();
 
-  void addFd(int fd, uint32_t events);
-  void modFd(int fd, uint32_t events);
+    void addFd(int fd, uint32_t events);
+    void modFd(int fd, uint32_t events);
 
-  void removeFd(int fd);
+    void removeFd(int fd);
 
-  int wait(epoll_event *events, int maxevents, int timeout);
+    int wait(epoll_event* events, int maxevents, int timeout);
 
-  int getFd() const;
+    int getFd() const;
 
-private:
-  int epoll_fd_;
+  private:
+    int epoll_fd_;
 
-  // Disable copying
-  EpollWrapper(const EpollWrapper &);
-  EpollWrapper &operator=(const EpollWrapper &);
+    // Disable copying
+    EpollWrapper(const EpollWrapper&);
+    EpollWrapper& operator=(const EpollWrapper&);
 };

@@ -1,422 +1,191 @@
 #include "Client.hpp"
-#include "../network/ServerManager.hpp"
-#include <algorithm>
-#include <cctype>
-#include <cerrno>
-#include <cstring>
-#include <iostream>
-#include <signal.h>
-#include <sstream>
-#include <sys/wait.h>
+
+#include <sys/socket.h>
 #include <unistd.h>
 
-#define BUFFER_SIZE 4096
-
-Client::Client(int fd, const std::vector< ServerBlock >* configs)
-    : fd_(fd), configs_(configs), active_config_(NULL), state_(CONNECTED),
-      cgi_process_(NULL), cgi_response_sent_(0), server_manager_(NULL),
-      last_activity_(time(NULL)) {
-  if (configs && !configs->empty()) {
-    active_config_ = &(*configs)[0]; // Default to first
-  }
-}
-
-// ... dest, getters ...
-
-void Client::processRequest() {
-  const HttpRequest& req = parser_.getRequest();
-
-  // Explicit Chunked Rejection
-  if (req.getHeader("transfer-encoding") == "chunked") {
-    HttpResponse response(501); // Not Implemented
-    response.setBody("Chunked encoding not supported");
-    write_buffer_ = response.toString();
-    state_ = WRITING;
-    return;
-  }
-
-  std::cout << "Processing request: " << req.getMethod() << " " << req.getUri()
-            << std::endl;
-
-  // Virtual Host Selection
-  std::string host = req.getHeader("host");
-  if (!host.empty()) {
-    // Strip port if present
-    size_t colon = host.find(':');
-    if (colon != std::string::npos) {
-      host = host.substr(0, colon);
-    }
-
-    // Find matching server
-    for (size_t i = 0; i < configs_->size(); ++i) {
-      const ServerBlock& block = (*configs_)[i];
-      for (size_t j = 0; j < block.server_names.size(); ++j) {
-        if (block.server_names[j] == host) {
-          active_config_ = &block;
-          break;
-        }
-      }
-    }
-  }
-
-  HttpResponse response = processor_.process(req, active_config_);
-
-  // Check if CGI was started
-  CgiProcess* cgi_proc = processor_.getCgiProcess();
-  if (cgi_proc) {
-    // CGI is running - don't send response yet, wait for output
-    std::cout << "CGI process started (PID: " << cgi_proc->getPid() << ")"
-              << std::endl;
-    setCgiProcess(cgi_proc);
-    // State changed to WAITING_FOR_CGI in setCgiProcess
-    processor_.clearCgiProcess();
-    return;
-  }
-
-  write_buffer_ = response.toString();
-  state_ = WRITING;
+Client::Client(int fd, const std::vector< ServerConfig >* configs, int listenPort) :
+      _fd(fd),
+      _inBuffer(),
+      _outBuffer(),
+      _parser(),
+      _response(),
+      _processor(),
+      _configs(configs),
+      _listenPort(listenPort),
+      _state(STATE_IDLE),
+      _lastActivity(std::time(0)),
+      _serverManager(0),
+      _cgiProcess(0),
+      _closeAfterWrite(false),
+      _responseQueue() {
 }
 
 Client::~Client() {
-  if (fd_ != -1) {
-    close(fd_);
-  }
-  if (cgi_process_) {
-    // Clean up any remaining pipes
-    if (cgi_process_->getPipeIn() != -1) {
-      close(cgi_process_->getPipeIn());
+    /*
+    if (_cgiProcess)
+    {
+        delete _cgiProcess;
+        _cgiProcess = 0;
     }
-    if (cgi_process_->getPipeOut() != -1) {
-      close(cgi_process_->getPipeOut());
-    }
-    delete cgi_process_;
-  }
+  */
 }
 
-int Client::getFd() const { return fd_; }
+int Client::getFd() const {
+    return _fd;
+}
 
-Client::State Client::getState() const { return state_; }
+ClientState Client::getState() const {
+    return _state;
+}
 
 bool Client::needsWrite() const {
-  return state_ == WRITING && !write_buffer_.empty();
+    return !_outBuffer.empty();
 }
 
-time_t Client::getLastActivity() const { return last_activity_; }
+time_t Client::getLastActivity() const {
+    return _lastActivity;
+}
+
+// MOTOR DE ENTRADA
+// ESTE METODO SE LLAMARA CUANDO EPOLL NOS AVISE CUANDO HAY EPOLLIN
 
 void Client::handleRead() {
-  last_activity_ = time(NULL);
-  while (true) {
-    char buffer[BUFFER_SIZE];
-    ssize_t bytes_read = read(fd_, buffer, BUFFER_SIZE);
+    char buffer[4096]; // buffer temporal
+    ssize_t bytesRead = 0;
 
-    if (bytes_read > 0) {
-      parser_.parse(buffer, bytes_read);
-    } else if (bytes_read == 0) {
-      state_ = CLOSED;
-      return;
+    // 1) Recibir datos crudos
+    // 2)actualizar tiempo para evitar timeout
+    // 3) anadir al buffer de procesamiento
+    // 4) invocar al parser (la logia que ya esta hecha)
+    // 5)verificar si el parser termino
+    bytesRead = recv(_fd, buffer, sizeof(buffer), 0);
+    if (bytesRead > 0) {
+        _lastActivity = std::time(0);
+        if (_state == STATE_IDLE)
+            _state = STATE_READING_HEADER;
+
+        _parser.consume(std::string(buffer, bytesRead));
+
+        while (_parser.getState() == COMPLETE) {
+            bool shouldClose = handleCompleteRequest();
+            if (_cgiProcess)
+                return;
+            if (shouldClose)
+                return;
+            _parser.reset();
+            _parser.consume("");
+        }
+
+        if (_parser.getState() == ERROR) {
+            handleCompleteRequest();
+            return;
+        }
+    } else if (bytesRead == 0) {
+        _state = STATE_CLOSED;
     } else {
-      if (errno == EAGAIN || errno == EWOULDBLOCK) {
-        // Not an error, just no data available right now
-        break;
-      }
-      state_ = CLOSED;
-      return;
+        _state = STATE_CLOSED;
     }
-  }
-
-  if (parser_.getState() == HttpParser::ERROR) {
-    HttpResponse response(400);
-    response.setBody("Bad Request");
-    write_buffer_ = response.toString();
-    state_ = WRITING;
-    return;
-  }
-
-  if (parser_.isComplete()) {
-    processRequest();
-    // state_ is set to WRITING inside processRequest
-  } else {
-    state_ = READING;
-  }
 }
+
+// MOTOR DE SALIDA
+// ES EL PUNTO CRITICO DE LOS SERVIDORES NO BLOQUEANTES
+// SEND() NO VA ENVAIR Todo EL VECTOR DE UNA VEZ
 
 void Client::handleWrite() {
-  last_activity_ = time(NULL);
-
-  while (!write_buffer_.empty()) {
-    ssize_t bytes_written =
-        write(fd_, write_buffer_.c_str(), write_buffer_.length());
-
-    if (bytes_written > 0) {
-      write_buffer_.erase(0, bytes_written);
-    } else {
-      if (errno == EAGAIN || errno == EWOULDBLOCK) {
-        // Socket buffer full, try again later
+    if (_outBuffer.empty())
         return;
-      }
-      state_ = CLOSED;
-      return;
-    }
-  }
 
-  if (write_buffer_.empty()) {
-    // Done writing response
-
-    // Check for Keep-Alive
-    const HttpRequest& req = parser_.getRequest();
-    std::string connection = req.getHeader("connection");
-
-    // Case-insensitive check (headers are already lowercased by parser)
-    bool keep_alive = true;
-    if (connection == "close") {
-      keep_alive = false;
-    } else if (req.getVersion() == "HTTP/1.0") {
-      if (connection != "keep-alive") {
-        keep_alive = false;
-      }
+    ssize_t bytesSent = send(_fd, _outBuffer.c_str(), _outBuffer.size(), 0);
+    if (bytesSent > 0) {
+        _lastActivity = std::time(0);
+        _outBuffer.erase(0, bytesSent);
+    } else if (bytesSent < 0) {
+        _state = STATE_CLOSED;
+        return;
     }
 
-    if (keep_alive) {
-      state_ = READING;
-      parser_.reset();
-    } else {
-      state_ = CLOSED;
+    // 1)Intentar enviar lo que queda en el buffer
+    // 2)hemos terminado de enviar todo?
+    // 2.1)respuesta completa? cerrar conexion o keep alive
+
+    if (_outBuffer.empty()) {
+        if (_closeAfterWrite) {
+            _state = STATE_CLOSED;
+            return;
+        }
+
+        if (!_responseQueue.empty()) {
+            PendingResponse next = _responseQueue.front();
+            _responseQueue.pop();
+            _outBuffer = next.data;
+            _closeAfterWrite = next.closeAfter;
+            _state = STATE_WRITING_RESPONSE;
+            return;
+        }
+
+        _state = STATE_IDLE;
     }
-  }
 }
 
-// ============================================================================
-// CGI Execution Management
-// ============================================================================
-
-void Client::setCgiProcess(CgiProcess* proc) {
-  cgi_process_ = proc;
-  if (proc && server_manager_) {
-    state_ = WAITING_FOR_CGI;
-    cgi_response_sent_ = 0;
-
-    // Register output pipe with ServerManager for reading (EPOLLIN)
-    server_manager_->registerCgiPipe(proc->getPipeOut(),
-                                     EPOLLIN | EPOLLHUP | EPOLLERR, this);
-
-    // Register input pipe if we have body to write
-    if (proc->getPipeIn() != -1) {
-      if (proc->isRequestBodySent()) {
-        // No body to send, close input immediately to signal EOF to CGI
-        proc->closePipeIn();
-      } else {
-        // Register for writing (EPOLLOUT)
-        server_manager_->registerCgiPipe(proc->getPipeIn(),
-                                         EPOLLOUT | EPOLLHUP | EPOLLERR, this);
-      }
-    }
-  } else if (proc) {
-    state_ = WAITING_FOR_CGI;
-    cgi_response_sent_ = 0;
-  }
+void Client::buildResponse() {
+    // depende del status que tengas respondemos una cosa u otra...
+    // serializar a raw bytes para el envio
+    const HttpRequest& request = _parser.getRequest();
+    // TODO (CGI flujo):
+    // 1) RequestProcessor decide si es CGI o estatico.
+    // 2) Si es CGI, el Client debe crear el proceso CGI (CgiExecutor)
+    //    y registrar el pipe de salida en epoll via ServerManager.
+    // 3) ServerManager recibe eventos del pipe y llama de vuelta al Client
+    //    para leer la salida CGI y construir HttpResponse.
+    //
+    // Ejemplo:
+    // if (requestIsCgi(request)) {
+    //     CgiExecutor exec;
+    //     CgiProcess* proc = exec.executeAsync(request, scriptPath, interpreterPath);
+    //     if (proc) {
+    //         serverManager->registerCgiPipe(proc->getPipeOut(), EPOLLIN, this);
+    //         // Guardar proc en el Client para leer salida luego
+    //         // this->_cgiProcess = proc;
+    //     } else {
+    //         buildErrorResponse(_response, request, 500, true, /*server*/0);
+    //     }
+    //     return;
+    // }
+    // else {
+    //     _processor.process(request, _configs, _listenPort,
+    //                        _parser.getState() == ERROR, _response);
+    // }
+    if (startCgiIfNeeded(request))
+        return;
+    _processor.process(request, _configs, _listenPort, _parser.getState() == ERROR, _response);
 }
 
-CgiProcess* Client::getCgiProcess() const { return cgi_process_; }
-
-void Client::setServerManager(ServerManager* manager) {
-  server_manager_ = manager;
+bool Client::handleCompleteRequest() {
+    const HttpRequest& request = _parser.getRequest();
+    bool shouldClose = (_parser.getState() == ERROR) || request.shouldCloseConnection();
+    buildResponse();
+    if (_cgiProcess) {
+        // Esperando respuesta CGI; la respuesta se enviara cuando termine.
+        // Ejemplo (comentado):
+        // if (_cgiProcess->isHeadersComplete()) {
+        //     // Ya tenemos headers+body del CGI en buffers internos.
+        //     finalizeCgiResponse();
+        //     _cgiProcess = 0;
+        // }
+        return true;
+    }
+    std::vector< char > serialized = _response.serialize();
+    enqueueResponse(serialized, shouldClose);
+    return shouldClose;
 }
 
-void Client::handleCgiInput() {
-  if (!cgi_process_) {
-    return;
-  }
-
-  int pipe_fd = cgi_process_->getPipeIn();
-  if (pipe_fd == -1) {
-    return;
-  }
-
-  const std::string& body = cgi_process_->getRequestBody();
-  size_t written = cgi_process_->getBodyBytesWritten();
-  size_t remaining = body.length() - written;
-
-  if (remaining > 0) {
-    ssize_t n = write(pipe_fd, body.c_str() + written, remaining);
-
-    if (n > 0) {
-      cgi_process_->advanceBodyBytesWritten(n);
-      last_activity_ = time(NULL);
-
-      if (cgi_process_->isRequestBodySent()) {
-        // Done writing, close pipe to signal EOF
-        server_manager_->unregisterCgiPipe(pipe_fd);
-        cgi_process_->closePipeIn();
-      }
-    } else if (n == -1) {
-      if (errno != EAGAIN && errno != EWOULDBLOCK) {
-        std::cerr << "Error writing to CGI pipe: " << strerror(errno)
-                  << std::endl;
-        server_manager_->unregisterCgiPipe(pipe_fd);
-        cgi_process_->closePipeIn();
-      }
+void Client::enqueueResponse(const std::vector< char >& data, bool closeAfter) {
+    std::string payload(data.begin(), data.end());
+    if (_outBuffer.empty()) {
+        _outBuffer = payload;
+        _closeAfterWrite = closeAfter;
+        _state = STATE_WRITING_RESPONSE;
+        return;
     }
-  } else {
-    // Should have been closed already if empty
-    server_manager_->unregisterCgiPipe(pipe_fd);
-    cgi_process_->closePipeIn();
-  }
-}
-
-void Client::handleCgiPipe(int pipe_fd, uint32_t events) {
-  if (!cgi_process_)
-    return;
-
-  if (pipe_fd == cgi_process_->getPipeIn()) {
-    if (events & EPOLLOUT) {
-      handleCgiInput();
-    }
-    if (events & (EPOLLERR | EPOLLHUP)) {
-      server_manager_->unregisterCgiPipe(pipe_fd);
-      cgi_process_->closePipeIn();
-    }
-  } else if (pipe_fd == cgi_process_->getPipeOut()) {
-    if (events & (EPOLLIN | EPOLLHUP | EPOLLERR)) {
-      handleCgiOutput();
-    }
-  }
-}
-
-void Client::handleCgiOutput() {
-  if (!cgi_process_) {
-    return;
-  }
-
-  // Read available data from CGI pipe (non-blocking)
-  int pipe_fd = cgi_process_->getPipeOut();
-  if (pipe_fd == -1) {
-    return;
-  }
-
-  char buffer[4096];
-  ssize_t n = read(pipe_fd, buffer, sizeof(buffer));
-
-  if (n > 0) {
-    // Data available
-    cgi_process_->appendResponseData(buffer, n);
-
-    // Update last activity
-    last_activity_ = time(NULL);
-
-  } else if (n == 0) {
-    // EOF from CGI pipe - child finished
-    std::cout << "CGI process finished" << std::endl;
-    finalizeCgiResponse();
-    return;
-
-  } else if (errno != EAGAIN && errno != EWOULDBLOCK) {
-    // Error reading
-    std::cerr << "Error reading from CGI pipe: " << strerror(errno)
-              << std::endl;
-    finalizeCgiResponse();
-    return;
-  }
-
-  // Check for timeout
-  if (cgi_process_->isTimedOut()) {
-    std::cerr << "CGI process timeout" << std::endl;
-    write_buffer_ = "HTTP/1.1 504 Gateway Timeout\r\nContent-Length: 0\r\n\r\n";
-    state_ = WRITING;
-    if (cgi_process_) {
-      int pid = cgi_process_->getPid();
-      kill(pid, SIGKILL);
-    }
-  }
-}
-
-void Client::finalizeCgiResponse() {
-  if (!cgi_process_) {
-    return;
-  }
-
-  // Build HTTP response from CGI output
-  HttpResponse response(cgi_process_->getStatusCode());
-
-  if (!cgi_process_->isHeadersComplete()) {
-    std::cerr << "CGI process failed to produce a valid response headers "
-                 "(Premature Exit)"
-              << std::endl;
-    response = HttpResponse(502);
-    response.setBody("Bad Gateway: CGI script did not return a valid response");
-    write_buffer_ = response.toString();
-    state_ = WRITING;
-
-    // Cleanup follows
-    if (cgi_process_->getPipeIn() != -1) {
-      server_manager_->unregisterCgiPipe(cgi_process_->getPipeIn());
-      cgi_process_->closePipeIn();
-    }
-    if (cgi_process_->getPipeOut() != -1) {
-      server_manager_->unregisterCgiPipe(cgi_process_->getPipeOut());
-      cgi_process_->closePipeOut();
-    }
-    delete cgi_process_;
-    cgi_process_ = NULL;
-
-    // Update Epoll to monitor for writing
-    if (server_manager_) {
-      server_manager_->updateClientEvents(fd_);
-    }
-    return;
-  }
-
-  // Add headers from CGI
-  // Parse response headers manually
-  const std::string& headers_str = cgi_process_->getResponseHeaders();
-  std::istringstream iss(headers_str);
-  std::string line;
-
-  while (std::getline(iss, line)) {
-    if (!line.empty() && line[line.length() - 1] == '\r') {
-      line.erase(line.length() - 1);
-    }
-    if (line.empty())
-      continue;
-
-    size_t colon = line.find(':');
-    if (colon != std::string::npos) {
-      std::string key = line.substr(0, colon);
-      std::string value = line.substr(colon + 1);
-      // Trim leading spaces
-      size_t first = value.find_first_not_of(" \t");
-      if (first != std::string::npos) {
-        value = value.substr(first);
-      }
-
-      // Skip Status header (already handled)
-      std::string key_lower = key;
-      std::transform(key_lower.begin(), key_lower.end(), key_lower.begin(),
-                     ::tolower);
-      if (key_lower != "status") {
-        response.setHeader(key, value);
-      }
-    }
-  }
-
-  response.setBody(cgi_process_->getResponseBody());
-
-  write_buffer_ = response.toString();
-  state_ = WRITING;
-
-  // Cleanup
-  if (cgi_process_->getPipeIn() != -1) {
-    server_manager_->unregisterCgiPipe(cgi_process_->getPipeIn());
-    cgi_process_->closePipeIn();
-  }
-  if (cgi_process_->getPipeOut() != -1) {
-    server_manager_->unregisterCgiPipe(cgi_process_->getPipeOut());
-    cgi_process_->closePipeOut();
-  }
-  delete cgi_process_;
-  cgi_process_ = NULL;
-
-  // Update Epoll to monitor for writing
-  if (server_manager_) {
-    server_manager_->updateClientEvents(fd_);
-  }
+    _responseQueue.push(PendingResponse(payload, closeAfter));
 }
