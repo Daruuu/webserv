@@ -6,6 +6,7 @@
 
 namespace config {
 namespace utils {
+
 std::string trimLine(const std::string& line);
 void removeComments(std::string& line);
 std::string removeSpacesAndTabs(std::string& line);
@@ -18,6 +19,7 @@ std::string removeSemicolon(const std::string& str);
 int stringToInt(const std::string& str);
 void exportContentToLogFile(const std::string& fileContent, const std::string& pathToExport);
 bool isValidPath(const std::string& path);
+long parseSize(const std::string& str);
 
 } // namespace utils
 

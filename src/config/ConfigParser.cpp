@@ -288,7 +288,8 @@ void ConfigParser::parseMaxSizeBody(ServerConfig& server, std::vector< std::stri
         config::utils::removeSemicolon(maxSizeStr);
         std::cout << "client_max_body_size clean: " << maxSizeStr;
 
-        server.setMaxBodySize(config::utils::stringToInt(maxSizeStr));
+        // FIX: use parseSize to handle K, M, G suffixes
+        server.setMaxBodySize(config::utils::parseSize(maxSizeStr));
     }
 }
 
@@ -448,7 +449,7 @@ void ConfigParser::parseLocationBlock(ServerConfig& server, std::stringstream& s
             }
         } else if (directive == config::section::autoindex) {
             std::string val = config::utils::removeSemicolon(locTokens[1]);
-            if (val != config::section::autoindex_on || val != config::section::autoindex_off) {
+            if (val != config::section::autoindex_on && val != config::section::autoindex_off) {
                 throw ConfigException(config::errors::invalid_autoindex);
             }
             loc.setAutoIndex(val == config::section::autoindex_on);

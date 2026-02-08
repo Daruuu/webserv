@@ -116,9 +116,8 @@ const std::map< std::string, std::string >& LocationConfig::getCgiHandlers() con
 }
 
 bool LocationConfig::isMethodAllowed(const std::string& method) const {
-    // Default safe policy? Or allow all? Usually allow all if empty?
-    // Nginx default is GET only if no limit_except.
-    if (!allowed_methods_.empty()) {
+    if (allowed_methods_.empty()) {
+        // Default policy: GET (and HEAD) allowed if no methods specified
         if (method == config::section::method_head || method == config::section::method_get) {
             return true;
         }
