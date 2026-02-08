@@ -49,10 +49,14 @@ bool Client::startCgiIfNeeded(const HttpRequest& request) {
         return false;
 
     std::string scriptPath = resolvePath(*server, location, request.getPath());
-    if (!isCgiRequest(scriptPath))
+    if (!isCgiRequest(scriptPath) && !isCgiRequestByConfig(location, scriptPath))
         return false;
 
-    std::string interpreterPath; // TODO: obtener desde config si aplica
+    std::string interpreterPath;
+    if (location) {
+        std::string ext = getFileExtension(scriptPath);
+        interpreterPath = location->getCgiPath(ext);
+    }
     CgiExecutor exec;
     _cgiProcess = exec.executeAsync(request, scriptPath, interpreterPath);
     if (_cgiProcess == 0) {

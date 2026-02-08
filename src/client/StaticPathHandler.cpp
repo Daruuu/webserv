@@ -2,6 +2,8 @@
 
 #include "AutoindexRenderer.hpp"
 #include "ErrorUtils.hpp"
+#include "RequestProcessorUtils.hpp"
+#include "ResponseUtils.hpp"
 
 #include <dirent.h>
 #include <fstream>
@@ -91,12 +93,14 @@ static bool handleDirectory(const HttpRequest& request, const ServerConfig* serv
 
     bool foundIndex = false;
     std::string indexPath;
+    std::string indexName;
     for (size_t i = 0; i < indexes.size(); ++i) {
         //indexPath = path + "/" + indexes[i];????
         indexPath = path;
         if (!indexPath.empty() && indexPath[indexPath.size() - 1] != '/')
             indexPath += "/";
         indexPath += indexes[i];
+        indexName = indexes[i];
 
         bool isDir = false;
         bool isReg = false;
@@ -107,11 +111,19 @@ static bool handleDirectory(const HttpRequest& request, const ServerConfig* serv
     }
 //revisar de hacer un doble check en el mapa de cgi de daru 
     if (foundIndex) {
-       // if (isCgiRequest(indexPath)){
-            //TODO AQUI hay un problema: handleStaticPath devuelve un bool para
-            //errores 
-            //necesito avisar al processor d que esto ahora es un CGI
-        //}
+        if (isCgiRequestByConfig(location, indexPath)) {
+            std::string redirectPath = request.getPath();
+            if (redirectPath.empty())
+                redirectPath = "/";
+            if (redirectPath[redirectPath.size() - 1] != '/')
+                redirectPath += "/";
+            redirectPath += indexName;
+
+            std::vector< char > empty;
+            fillBaseResponse(response, request, 302, request.shouldCloseConnection(), empty);
+            response.setHeader("Location", redirectPath);
+            return true;
+        }
         if (!readFileToBody(indexPath, body)) {
             buildErrorResponse(response, request, 403, false, server);
             return true;

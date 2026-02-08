@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Webserv 42</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+    <header class="hero">
+        <h1>Sobre <span class="accent">webserv</span></h1>
+        <p class="subtitle">Un servidor HTTP/1.1 construido desde cero como parte del curriculum de 42.</p>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="/">Inicio</a></li>
+            <li><a href="/about.html" class="active">About</a></li>
+        </ul>
+    </nav>
+
+    <main class="container">
+
+        <div class="section">
+            <h2 class="section-title"><span class="icon">&#128640;</span> Que es webserv?</h2>
+            <p class="section-desc">
+                Webserv es un proyecto de la escuela 42 que consiste en implementar un servidor HTTP
+                compatible con HTTP/1.1, similar a Nginx. Esta escrito completamente en C++98 sin
+                usar librerias externas, utilizando I/O no bloqueante con epoll para manejar
+                multiples conexiones de forma eficiente.
+            </p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title"><span class="icon">&#9889;</span> Funcionalidades</h2>
+            <div class="cards">
+                <div class="card">
+                    <h3>Metodos HTTP</h3>
+                    <p>Soporte completo para GET, POST y DELETE con manejo correcto de headers y body.</p>
+                </div>
+                <div class="card">
+                    <h3>Archivos estaticos</h3>
+                    <p>Servir archivos HTML, CSS, JS, imagenes y mas desde el directorio raiz configurado.</p>
+                </div>
+                <div class="card">
+                    <h3>CGI</h3>
+                    <p>Ejecucion de scripts Python y PHP a traves del protocolo Common Gateway Interface.</p>
+                </div>
+                <div class="card">
+                    <h3>Upload de archivos</h3>
+                    <p>Subida de archivos al servidor mediante peticiones POST con multipart/form-data.</p>
+                </div>
+                <div class="card">
+                    <h3>Virtual Hosts</h3>
+                    <p>Multiples servidores virtuales en diferentes puertos con configuraciones independientes.</p>
+                </div>
+                <div class="card">
+                    <h3>Paginas de error</h3>
+                    <p>Paginas de error personalizadas (404, 500, etc.) configurables por servidor.</p>
+                </div>
+                <div class="card">
+                    <h3>Autoindex</h3>
+                    <p>Listado automatico de directorios cuando no se encuentra un archivo indice.</p>
+                </div>
+                <div class="card">
+                    <h3>Non-blocking I/O</h3>
+                    <p>Manejo eficiente de conexiones multiples usando epoll sin hilos adicionales.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title"><span class="icon">&#128736;</span> Configuracion</h2>
+            <p class="section-desc">
+                El servidor se configura mediante archivos de configuracion similares a los de Nginx.
+                Se pueden definir bloques <code>server</code> con directivas como <code>listen</code>,
+                <code>root</code>, <code>index</code>, y bloques <code>location</code> para cada ruta.
+            </p>
+        </div>
+
+    </main>
+
+    <footer>
+        <p>
+            webserv 42 &mdash; <a href="/">Volver al inicio</a>
+        </p>
+    </footer>
+
+</body>
+</html>

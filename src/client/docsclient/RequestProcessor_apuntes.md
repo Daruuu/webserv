@@ -132,8 +132,6 @@ Apuntes extra sobre el flujo correcto (lo que nos recomendaron y ya corregimos):
    - estático (leer archivo)  
    - CGI (delegar a Carles)  
    - errores (403/404/405/413)  
-   Por qué: define la respuesta final según tipo de recurso.
-
-7) Construir HttpResponse  
+   Por qué: define la respuesta final según tipo de recurso.7) Construir HttpResponse  
    - status, headers, body  
    Por qué: el Client solo serializa y envía.

@@ -58,7 +58,7 @@ void RequestProcessor::process(const HttpRequest& request,
 
         path_real = resolvePath(*server, location, request.getPath());
         std::cout <<  " DEBUG: Intentando abrir: [" << path_real << "]" << std::endl;
-        isCgi = isCgiRequest(path_real);
+        isCgi = isCgiRequest(path_real) || isCgiRequestByConfig(location, path_real);
 
         if (isCgi) {
             // TODO: integrar CGI: delegar en CgiHandler (Carles).

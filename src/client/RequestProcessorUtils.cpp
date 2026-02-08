@@ -68,6 +68,25 @@ bool isCgiRequest(const std::string& path) {
     return (ext == ".py" || ext == ".php");
 }
 
+std::string getFileExtension(const std::string& path) {
+    std::string::size_type slashPos = path.find_last_of('/');
+    std::string::size_type dotPos = path.find_last_of('.');
+    if (dotPos == std::string::npos)
+        return "";
+    if (slashPos != std::string::npos && dotPos < slashPos)
+        return "";
+    return path.substr(dotPos);
+}
+
+bool isCgiRequestByConfig(const LocationConfig* location, const std::string& path) {
+    if (location == 0)
+        return false;
+    std::string ext = getFileExtension(path);
+    if (ext.empty())
+        return false;
+    return !location->getCgiPath(ext).empty();
+}
+
 std::string methodToString(HttpMethod method) {
     if (method == HTTP_METHOD_GET)
         return "GET";

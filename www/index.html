@@ -1,9 +1,237 @@
 <!DOCTYPE html>
-<html>
-<head><title>Webserv 42</title></head>
-<body style="background-color: #2c3e50; color: white; font-family: sans-serif;">
-    <h1>🚀 Servidor de Ana & Co.</h1>
-    <p>Si estás viendo esto, el <b>StaticPathHandler</b> ha funcionado!</p>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webserv 42</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+    <!-- ========== HERO ========== -->
+    <header class="hero">
+        <h1><span class="accent">webserv</span> 42</h1>
+        <p class="subtitle">
+            Servidor HTTP/1.1 escrito desde cero en C++98 &mdash; archivos estaticos, CGI, uploads y mas.
+        </p>
+        <div class="badge-row">
+            <span class="badge http">HTTP/1.1</span>
+            <span class="badge cpp">C++98</span>
+            <span class="badge cgi">CGI</span>
+            <span class="badge nonblock">Non-blocking I/O</span>
+        </div>
+    </header>
+
+    <!-- ========== NAV ========== -->
+    <nav>
+        <ul>
+            <li><a href="#rutas" class="active">Rutas</a></li>
+            <li><a href="#get">GET</a></li>
+            <li><a href="#upload">Upload</a></li>
+            <li><a href="#post">POST</a></li>
+            <li><a href="#cgi">CGI</a></li>
+            <li><a href="#errores">Errores</a></li>
+        </ul>
+    </nav>
+
+    <!-- ========== MAIN ========== -->
+    <main class="container">
+
+        <!-- ===== Server Status ===== -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="icon">&#9881;</span> Estado del servidor
+            </h2>
+            <p class="section-desc">
+                <span class="status-dot online"></span>
+                Servidor activo en <strong>127.0.0.1:8080</strong>
+            </p>
+        </div>
+
+        <!-- ===== Quick Routes ===== -->
+        <div class="section" id="rutas">
+            <h2 class="section-title">
+                <span class="icon">&#128279;</span> Rutas disponibles
+            </h2>
+            <p class="section-desc">Endpoints configurados en el servidor.</p>
+
+            <table class="link-table">
+                <thead>
+                    <tr>
+                        <th>Ruta</th>
+                        <th>Metodos</th>
+                        <th>Descripcion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><a href="/"><code>/</code></a></td>
+                        <td><span class="method-badge method-get">GET</span> <span class="method-badge method-post">POST</span></td>
+                        <td>Pagina principal (autoindex activado)</td>
+                    </tr>
+                    <tr>
+                        <td><a href="/about.html"><code>/about.html</code></a></td>
+                        <td><span class="method-badge method-get">GET</span></td>
+                        <td>Pagina About</td>
+                    </tr>
+                    <tr>
+                        <td><a href="/images/"><code>/images</code></a></td>
+                        <td><span class="method-badge method-get">GET</span> <span class="method-badge method-post">POST</span> <span class="method-badge method-delete">DELETE</span></td>
+                        <td>Imagenes (upload habilitado)</td>
+                    </tr>
+                    <tr>
+                        <td><a href="/uploads/"><code>/uploads</code></a></td>
+                        <td><span class="method-badge method-get">GET</span></td>
+                        <td>Directorio de archivos subidos</td>
+                    </tr>
+                    <tr>
+                        <td><a href="/cgi-bin/hello.py"><code>/cgi-bin/hello.py</code></a></td>
+                        <td><span class="method-badge method-cgi">CGI</span></td>
+                        <td>Script CGI de prueba (Python)</td>
+                    </tr>
+                    <tr>
+                        <td><a href="/cgi-bin/echo_env.py"><code>/cgi-bin/echo_env.py</code></a></td>
+                        <td><span class="method-badge method-cgi">CGI</span></td>
+                        <td>Variables de entorno CGI</td>
+                    </tr>
+                    <tr>
+                        <td><a href="/directory/"><code>/directory</code></a></td>
+                        <td><span class="method-badge method-get">GET</span> <span class="method-badge method-post">POST</span></td>
+                        <td>YoupiBanane (tester 42)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ===== GET ===== -->
+        <div class="section" id="get">
+            <h2 class="section-title">
+                <span class="icon">&#128269;</span> Test GET Request
+            </h2>
+            <p class="section-desc">
+                Formularios HTML puros para hacer peticiones GET. No se usa JavaScript.
+            </p>
+
+            <div class="test-panel">
+                <div class="btn-group">
+                    <a class="btn btn-info" href="/cgi-bin/hello.py">GET /cgi-bin/hello.py</a>
+                    <a class="btn btn-info" href="/cgi-bin/test.py">GET /cgi-bin/test.py</a>
+                    <a class="btn btn-info" href="/uploads/">GET /uploads/</a>
+                </div>
+
+                <form class="form-group" action="/cgi-bin/echo_env.py" method="GET" style="margin-top: 1rem;">
+                    <label for="get-query">GET con query string</label>
+                    <input type="text" id="get-query" name="q" placeholder="q=hola&x=42">
+                    <button class="btn btn-primary btn-sm" type="submit" style="margin-top: 0.6rem;">Enviar</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ===== File Upload (POST multipart) ===== -->
+        <div class="section" id="upload">
+            <h2 class="section-title">
+                <span class="icon">&#128228;</span> Upload de archivos
+            </h2>
+            <p class="section-desc">Sube un archivo al servidor usando POST con multipart/form-data.</p>
+
+            <div class="test-panel">
+                <form action="/images/" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="upload-file">Selecciona un archivo</label>
+                        <input type="file" id="upload-file" name="file">
+                    </div>
+                    <button type="submit" class="btn btn-success">Subir archivo</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ===== CGI Tests ===== -->
+        <div class="section" id="cgi">
+            <h2 class="section-title">
+                <span class="icon">&#9889;</span> CGI Scripts
+            </h2>
+            <p class="section-desc">Ejecuta scripts CGI en Python directamente desde el navegador.</p>
+
+            <div class="cards">
+                <a class="card" href="/cgi-bin/hello.py">
+                    <span class="method-badge method-cgi">CGI &middot; Python</span>
+                    <h3>hello.py</h3>
+                    <p>Hola mundo basico. Verifica que el handler CGI funciona correctamente.</p>
+                </a>
+
+                <a class="card" href="/cgi-bin/test.py">
+                    <span class="method-badge method-cgi">CGI &middot; Python</span>
+                    <h3>test.py</h3>
+                    <p>Muestra el metodo HTTP y un saludo. Util para verificar REQUEST_METHOD.</p>
+                </a>
+
+                <a class="card" href="/cgi-bin/echo_env.py">
+                    <span class="method-badge method-cgi">CGI &middot; Python</span>
+                    <h3>echo_env.py</h3>
+                    <p>Imprime todas las variables de entorno CGI. Ideal para depuracion.</p>
+                </a>
+
+                <a class="card" href="/cgi-bin/debug.py">
+                    <span class="method-badge method-cgi">CGI &middot; Python</span>
+                    <h3>debug.py</h3>
+                    <p>Script de depuracion con logs a stderr. Verifica el flujo completo.</p>
+                </a>
+            </div>
+        </div>
+
+        <!-- ===== Error Pages ===== -->
+        <div class="section" id="errores">
+            <h2 class="section-title">
+                <span class="icon">&#9888;</span> Paginas de error
+            </h2>
+            <p class="section-desc">Prueba las paginas de error personalizadas del servidor.</p>
+
+            <div class="cards">
+                <a class="card" href="/esta-pagina-no-existe">
+                    <span class="method-badge method-delete">404</span>
+                    <h3>Not Found</h3>
+                    <p>Solicita una ruta inexistente para ver la pagina 404 personalizada.</p>
+                </a>
+
+                <a class="card" href="/cgi-bin/crash.py">
+                    <span class="method-badge method-delete">500</span>
+                    <h3>Internal Server Error</h3>
+                    <p>Ejecuta un script CGI que falla para provocar un error 500.</p>
+                </a>
+            </div>
+        </div>
+
+        <!-- ===== POST Form ===== -->
+        <div class="section" id="post">
+            <h2 class="section-title">
+                <span class="icon">&#128221;</span> Test POST con body
+            </h2>
+            <p class="section-desc">
+                Envia datos con un formulario HTML puro (Content-Type: application/x-www-form-urlencoded).
+                La ruta <code>/post_body</code> tiene un limite de 100 bytes.
+            </p>
+
+            <div class="test-panel">
+                <form action="/post_body" method="POST">
+                    <div class="form-group">
+                        <label for="post-body-text">Body</label>
+                        <textarea id="post-body-text" name="body" placeholder="Escribe el contenido del body aqui...">Hola desde webserv!</textarea>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Enviar POST</button>
+                </form>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ========== FOOTER ========== -->
+    <footer>
+        <p>
+            webserv 42 &mdash; Hecho con C++98 y determinacion.
+            <br>
+            <a href="https://github.com">Repositorio</a>
+        </p>
+    </footer>
+
 </body>
 </html>
-

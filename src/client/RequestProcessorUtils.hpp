@@ -16,6 +16,9 @@ std::string resolvePath(const ServerConfig& server, const LocationConfig* locati
                         const std::string& uri);
 
 bool isCgiRequest(const std::string& path);
+bool isCgiRequestByConfig(const LocationConfig* location, const std::string& path);
+
+std::string getFileExtension(const std::string& path);
 
 std::string methodToString(HttpMethod method);
 
