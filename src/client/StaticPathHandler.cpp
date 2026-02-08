@@ -11,6 +11,7 @@
 #include <utility>
 
 static bool readFileToBody(const std::string& path, std::vector< char >& out) {
+
     std::ifstream file(path.c_str(), std::ios::in | std::ios::binary);
     if (!file.is_open())
         return false;
@@ -23,6 +24,7 @@ static bool readFileToBody(const std::string& path, std::vector< char >& out) {
 }
 
 static bool getPathInfo(const std::string& path, bool& isDir, bool& isReg) {
+
     struct stat st;
     if (stat(path.c_str(), &st) != 0)
         return false;
@@ -74,7 +76,7 @@ static std::vector< char > generateAutoIndexBody(const std::string& dirPath,
 static bool handleDirectory(const HttpRequest& request, const ServerConfig* server,
                             const LocationConfig* location, const std::string& path,
                             std::vector< char >& body, HttpResponse& response) {
-    // std::vector<std::string> indexes = server->getIndexVector();
+    
     std::vector< std::string > indexes;
 
     if (location) {
@@ -90,6 +92,7 @@ static bool handleDirectory(const HttpRequest& request, const ServerConfig* serv
     bool foundIndex = false;
     std::string indexPath;
     for (size_t i = 0; i < indexes.size(); ++i) {
+        //indexPath = path + "/" + indexes[i];????
         indexPath = path;
         if (!indexPath.empty() && indexPath[indexPath.size() - 1] != '/')
             indexPath += "/";
@@ -102,8 +105,13 @@ static bool handleDirectory(const HttpRequest& request, const ServerConfig* serv
             break;
         }
     }
-
+//revisar de hacer un doble check en el mapa de cgi de daru 
     if (foundIndex) {
+       // if (isCgiRequest(indexPath)){
+            //TODO AQUI hay un problema: handleStaticPath devuelve un bool para
+            //errores 
+            //necesito avisar al processor d que esto ahora es un CGI
+        //}
         if (!readFileToBody(indexPath, body)) {
             buildErrorResponse(response, request, 403, false, server);
             return true;
@@ -124,6 +132,7 @@ static bool handleDirectory(const HttpRequest& request, const ServerConfig* serv
 static bool handleRegularFile(const HttpRequest& request, const ServerConfig* server,
                               const std::string& path, std::vector< char >& body,
                               HttpResponse& response) {
+
     if (request.getMethod() == HTTP_METHOD_POST) {
         buildErrorResponse(response, request, 405, false, server);
         return true;

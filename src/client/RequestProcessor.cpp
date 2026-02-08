@@ -4,7 +4,6 @@
 #include "ResponseUtils.hpp"
 #include "StaticPathHandler.hpp"
 
-// Helpers movidos a RequestProcessorUtils.cpp
 // MAIN FUNCTION: LOGIC OF THE PROCESSOR.
 // Flujo general:
 // 1) Inicializar status/body/shouldClose
@@ -15,8 +14,10 @@
 // 6) Decidir respuesta (estatico o CGI) + errores
 // 7) Rellenar HttpResponse
 void RequestProcessor::process(const HttpRequest& request,
-                               const std::vector< ServerConfig >* configs, int listenPort,
-                               bool parseError, HttpResponse& response) {
+                               const std::vector< ServerConfig >* configs,
+                               int listenPort,
+                               bool parseError, HttpResponse& response)
+{
     int statusCode = HTTP_STATUS_OK;
     std::string path_real = "";
     bool isCgi = false;
@@ -35,10 +36,6 @@ void RequestProcessor::process(const HttpRequest& request,
     }
     // 2) Select server, match location
     server = selectServerByPort(listenPort, configs);
-    // Host como extra (opcional):
-    // if (server == 0) {
-    //     server = selectServerByHost(request.getHeader("Host"), configs);
-    // }
     if (server)
         location = matchLocation(*server, request.getPath());
 
@@ -60,6 +57,7 @@ void RequestProcessor::process(const HttpRequest& request,
         }
 
         path_real = resolvePath(*server, location, request.getPath());
+        std::cout <<  " DEBUG: Intentando abrir: [" << path_real << "]" << std::endl;
         isCgi = isCgiRequest(path_real);
 
         if (isCgi) {
@@ -69,7 +67,8 @@ void RequestProcessor::process(const HttpRequest& request,
             buildErrorResponse(response, request, 501, true, server);
             return;
         }
-
+        //TODO Necesito un doble check, tengo que revisar en el mapa de CGI de
+        //DARU
         if (handleStaticPath(request, server, location, path_real, body, response))
             return;
     } else {
