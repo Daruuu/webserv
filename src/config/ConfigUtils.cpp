@@ -20,49 +20,50 @@ namespace utils {
  *   "  hello  " -> "hello"
  *   "\t\ntest\r\n" -> "test"
  */
-std::string trimLine(const std::string &line) {
-  const std::string whitespace = "\t\n\r";
+std::string trimLine(const std::string& line) {
+    const std::string whitespace = "\t\n\r";
 
-  const size_t start = line.find_first_not_of(whitespace);
-  if (start == std::string::npos) {
-    return "";
-  }
-  const size_t end = line.find_last_not_of(whitespace);
-  return line.substr(start, end - start + 1);
+    const size_t start = line.find_first_not_of(whitespace);
+    if (start == std::string::npos) {
+        return "";
+    }
+    const size_t end = line.find_last_not_of(whitespace);
+    return line.substr(start, end - start + 1);
 }
 
 /**
  * if line start wirh '#' remove line
  * @param line
  */
-void removeComments(std::string &line) {
-  size_t commentPosition = line.find('#');
-  if (commentPosition != std::string::npos) {
-    line = line.substr(0, commentPosition);
-  }
+void removeComments(std::string& line) {
+    size_t commentPosition = line.find('#');
+    if (commentPosition != std::string::npos) {
+        line = line.substr(0, commentPosition);
+    }
 }
 
 struct IsConsecutiveSpace {
-  bool operator()(char a, char b) const { return a == ' ' && b == ' '; }
+    bool operator()(char a, char b) const {
+        return a == ' ' && b == ' ';
+    }
 };
 
-std::string removeSpacesAndTabs(std::string &line) {
-  line.erase(std::unique(line.begin(), line.end(), IsConsecutiveSpace()),
-             line.end());
-  return line;
+std::string removeSpacesAndTabs(std::string& line) {
+    line.erase(std::unique(line.begin(), line.end(), IsConsecutiveSpace()), line.end());
+    return line;
 }
 
-std::string normalizeSpaces(const std::string &line) {
-  std::stringstream ss(line);
-  std::string word;
-  std::string result;
+std::string normalizeSpaces(const std::string& line) {
+    std::stringstream ss(line);
+    std::string word;
+    std::string result;
 
-  while (ss >> word) {
-    if (!result.empty())
-      result += " ";
-    result += word;
-  }
-  return result;
+    while (ss >> word) {
+        if (!result.empty())
+            result += " ";
+        result += word;
+    }
+    return result;
 }
 
 /**
@@ -70,133 +71,130 @@ std::string normalizeSpaces(const std::string &line) {
  * F_OK: check for existence
  * R_OK: check for read permission
  */
-bool fileExists(const std::string &path) {
-  return (access(path.c_str(), F_OK | R_OK) == 0);
+bool fileExists(const std::string& path) {
+    return (access(path.c_str(), F_OK | R_OK) == 0);
 }
 
-std::vector<std::string> split(const std::string &str, char delimiter) {
-  std::vector<std::string> tokens;
-  std::string token;
-  std::istringstream tokenStream(str);
+std::vector< std::string > split(const std::string& str, char delimiter) {
+    std::vector< std::string > tokens;
+    std::string token;
+    std::istringstream tokenStream(str);
 
-  if (delimiter == ' ') {
-    while (tokenStream >> token)
-      tokens.push_back(token);
-  } else {
-    while (std::getline(tokenStream, token, delimiter)) {
-      tokens.push_back(token);
-    }
-  }
-  return tokens;
-}
-
-std::vector<std::string> tokenize(const std::string &line) {
-  std::vector<std::string> tokens;
-  std::string currentToken;
-  bool inQuotes = false;
-  // char quoteChar = 0; // ' or "
-
-  for (size_t i = 0; i < line.size(); ++i) {
-    char c = line[i];
-
-    if (inQuotes) {
-      if (c == '"') {
-        inQuotes = false;
-        // quoteChar = 0;
-        // Don't add quote to token?
-        // Nginx usually strips quotes.
-        // tokens.push_back(currentToken);
-        // currentToken.clear();
-      } else {
-        currentToken += c;
-      }
+    if (delimiter == ' ') {
+        while (tokenStream >> token)
+            tokens.push_back(token);
     } else {
-      if (std::isspace(c)) {
-        if (!currentToken.empty()) {
-          tokens.push_back(currentToken);
-          currentToken.clear();
+        while (std::getline(tokenStream, token, delimiter)) {
+            tokens.push_back(token);
         }
-      } else if (c == '"') {
-        inQuotes = true;
-        // quoteChar = c;
-      } else if (c == ';') {
-        /*
-        if (!currentToken.empty()) {
-          tokens.push_back(currentToken);
-          currentToken.clear();
-        }*/
-        // tokens.push_back(";"); // Keep semicolon as separate token?
-        // ConfigParser expects tokens with semicolons attached usually or
-        // stripped manually. Current split behavior: "listen 80;" -> "listen",
-        // "80;" So we should attach semicolon if it's part of the word, or...
-        // Wait, split(' ') keeps "80;" as "80;".
-        // But here we are iterating chars.
-        // If we hit ';', we end the token.
-        // We can append ';' to currentToken before clearing?
-        // Or just treat it as a char unless we want to be smart.
-        // Let's just treat it as normal char if not space.
-        currentToken += c;
-      } else if (c == '#') {
-        // Comment detected, stop parsing line
-        if (!currentToken.empty()) {
-          tokens.push_back(currentToken);
-        }
-        return tokens;
-      } else {
-        currentToken += c;
-      }
     }
-  }
-  if (!currentToken.empty()) {
-    tokens.push_back(currentToken);
-  }
-  return tokens;
+    return tokens;
+}
+
+std::vector< std::string > tokenize(const std::string& line) {
+    std::vector< std::string > tokens;
+    std::string currentToken;
+    bool inQuotes = false;
+    // char quoteChar = 0; // ' or "
+
+    for (size_t i = 0; i < line.size(); ++i) {
+        char c = line[i];
+
+        if (inQuotes) {
+            if (c == '"') {
+                inQuotes = false;
+                // quoteChar = 0;
+                // Don't add quote to token?
+                // Nginx usually strips quotes.
+                // tokens.push_back(currentToken);
+                // currentToken.clear();
+            } else {
+                currentToken += c;
+            }
+        } else {
+            if (std::isspace(c)) {
+                if (!currentToken.empty()) {
+                    tokens.push_back(currentToken);
+                    currentToken.clear();
+                }
+            } else if (c == '"') {
+                inQuotes = true;
+                // quoteChar = c;
+            } else if (c == ';') {
+                /*
+                if (!currentToken.empty()) {
+                  tokens.push_back(currentToken);
+                  currentToken.clear();
+                }*/
+                // tokens.push_back(";"); // Keep semicolon as separate token?
+                // ConfigParser expects tokens with semicolons attached usually or
+                // stripped manually. Current split behavior: "listen 80;" -> "listen",
+                // "80;" So we should attach semicolon if it's part of the word, or...
+                // Wait, split(' ') keeps "80;" as "80;".
+                // But here we are iterating chars.
+                // If we hit ';', we end the token.
+                // We can append ';' to currentToken before clearing?
+                // Or just treat it as a char unless we want to be smart.
+                // Let's just treat it as normal char if not space.
+                currentToken += c;
+            } else if (c == '#') {
+                // Comment detected, stop parsing line
+                if (!currentToken.empty()) {
+                    tokens.push_back(currentToken);
+                }
+                return tokens;
+            } else {
+                currentToken += c;
+            }
+        }
+    }
+    if (!currentToken.empty()) {
+        tokens.push_back(currentToken);
+    }
+    return tokens;
 }
 
 /**
  * use find() function to search position of ';'
  * @return substr of str
  */
-std::string removeSemicolon(const std::string &str) {
-  size_t pos = str.find(';');
-  if (pos != std::string::npos) {
-    return str.substr(0, pos);
-  }
-  return str;
+std::string removeSemicolon(const std::string& str) {
+    size_t pos = str.find(';');
+    if (pos != std::string::npos) {
+        return str.substr(0, pos);
+    }
+    return str;
 }
 
-int stringToInt(const std::string &str) {
-  char *end;
-  long value = std::strtol(str.c_str(), &end, 10);
+int stringToInt(const std::string& str) {
+    char* end;
+    long value = std::strtol(str.c_str(), &end, 10);
 
-  if (*end != '\0' || end == str.c_str()) {
-    throw ConfigException(config::errors::invalid_characters);
-  }
-  if (value > std::numeric_limits<int>::max() ||
-      value < std::numeric_limits<int>::min()) {
-    throw ConfigException(config::errors::number_out_of_range);
-  }
+    if (*end != '\0' || end == str.c_str()) {
+        throw ConfigException(config::errors::invalid_characters);
+    }
+    if (value > std::numeric_limits< int >::max() || value < std::numeric_limits< int >::min()) {
+        throw ConfigException(config::errors::number_out_of_range);
+    }
 
-  return static_cast<int>(value);
+    return static_cast< int >(value);
 }
 
-void exportContentToLogFile(const std::string &fileContent,
-                            const std::string &pathToExport) {
-  std::ofstream log(pathToExport.data());
-  log << fileContent;
-  log.close();
+void exportContentToLogFile(const std::string& fileContent, const std::string& pathToExport) {
+    std::ofstream log(pathToExport.data());
+    log << fileContent;
+    log.close();
 }
 
-bool isValidPath(const std::string &path) {
-  if (path.empty())
-    return false;
+bool isValidPath(const std::string& path) {
+    if (path.empty())
+        return false;
 
-  if (path.find('\0') != std::string::npos ||
-      path.find('\n') != std::string::npos ||
-      path.find('\r') != std::string::npos)
-    return false;
+    if (path.find('\0') != std::string::npos || path.find('\n') != std::string::npos ||
+        path.find('\r') != std::string::npos)
+        return false;
 
-  return true;
+    return true;
 }
 } // namespace utils
 
@@ -206,35 +204,35 @@ namespace debug {
  * export config file '.log'
  * remove empty lines and comment lines.
  */
-void debugConfigLog(const std::string &config_file_path) {
-  std::ifstream ifs(config_file_path.c_str());
-  if (!ifs.is_open()) {
-    throw ConfigException(config::errors::cannot_open_file + config_file_path +
-                          " (in generatePrettyConfigLog)");
-  }
+void debugConfigLog(const std::string& config_file_path) {
+    std::ifstream ifs(config_file_path.c_str());
+    if (!ifs.is_open()) {
+        throw ConfigException(config::errors::cannot_open_file + config_file_path +
+                              " (in generatePrettyConfigLog)");
+    }
 
-  std::ofstream logFile(config::paths::log_file_config.c_str());
-  if (!logFile.is_open()) {
-    std::cerr << "Warning: Could not open/create pretty log file: ";
-    return;
-  }
+    std::ofstream logFile(config::paths::log_file_config.c_str());
+    if (!logFile.is_open()) {
+        std::cerr << "Warning: Could not open/create pretty log file: ";
+        return;
+    }
 
-  logFile << "=== Pretty print of configuration file ===\n";
-  logFile << "File: " << config_file_path << "\n";
-  logFile << "Generated: " << __DATE__ << " " << __TIME__ << "\n";
-  logFile << "----------------------------------------\n\n";
+    logFile << "=== Pretty print of configuration file ===\n";
+    logFile << "File: " << config_file_path << "\n";
+    logFile << "Generated: " << __DATE__ << " " << __TIME__ << "\n";
+    logFile << "----------------------------------------\n\n";
 
-  std::string line;
-  size_t lineNum = 0;
-  while (std::getline(ifs, line)) {
-    ++lineNum;
-    config::utils::removeComments(line);
-    line = config::utils::trimLine(line);
-    if (line.empty())
-      continue;
-    logFile << lineNum << "|" << line << "\n";
-  }
-  ifs.close();
+    std::string line;
+    size_t lineNum = 0;
+    while (std::getline(ifs, line)) {
+        ++lineNum;
+        config::utils::removeComments(line);
+        line = config::utils::trimLine(line);
+        if (line.empty())
+            continue;
+        logFile << lineNum << "|" << line << "\n";
+    }
+    ifs.close();
 }
 } // namespace debug
 } // namespace config

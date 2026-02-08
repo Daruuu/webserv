@@ -5,8 +5,7 @@
 
 namespace http_header_utils {
 
-std::string trimSpaces(const std::string& value)
-{
+std::string trimSpaces(const std::string& value) {
     std::string::size_type start = value.find_first_not_of(" \t");
     if (start == std::string::npos)
         return "";
@@ -14,17 +13,13 @@ std::string trimSpaces(const std::string& value)
     return value.substr(start, end - start + 1);
 }
 
-std::string toLowerCopy(const std::string& value)
-{
+std::string toLowerCopy(const std::string& value) {
     std::string out = value;
     std::transform(out.begin(), out.end(), out.begin(), ::tolower);
     return out;
 }
 
-bool splitHeaderLine(const std::string& line,
-                     std::string& key,
-                     std::string& value)
-{
+bool splitHeaderLine(const std::string& line, std::string& key, std::string& value) {
     std::string::size_type colon = line.find(':');
     if (colon == std::string::npos)
         return false;
