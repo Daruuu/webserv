@@ -74,6 +74,7 @@ class Client {
     int getFd() const;
     ClientState getState() const;
     bool needsWrite() const;
+    bool hasPendingData() const;
     time_t getLastActivity() const;
 
     // Manejo de eventos
