@@ -285,9 +285,7 @@ void ConfigParser::parseMaxSizeBody(ServerConfig& server, const std::vector< std
     const std::string& maxSizeStr = config::utils::removeSemicolon(tokens[1]);
     if (!maxSizeStr.empty()) {
         config::utils::removeSemicolon(maxSizeStr);
-        server.setMaxBodySize(config::utils::stringToInt(maxSizeStr));
-		// TODO: carles option remove if already works
-        //server.setMaxBodySize(config::utils::parseSize(maxSizeStr));
+        server.setMaxBodySize(config::utils::parseSize(maxSizeStr));
     }
 }
 
