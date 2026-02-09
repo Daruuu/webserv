@@ -25,6 +25,10 @@ add_subdirectory(src/config)
 add_executable(webserv
         src/config/mainConfig.cpp
 )
+add_compile_options(-Wall -Wextra -Werror)
+
+# Definimos la ruta raíz para que los sub-archivos la conozcan
+set(WEBSERV_ROOT ${CMAKE_SOURCE_DIR})
 
 # link libs to executable.
 target_link_libraries(webserv PRIVATE
@@ -41,3 +45,11 @@ if(BUILD_TESTING)
 endif()
 
 #add_executable(Testing tests/unit/main_test.cpp)
+# Si quieres que el binario de los tests se cree,
+# tenemos que incluir la carpeta donde está tu código
+#add_subdirectory(src/http)
+add_subdirectory(tests/test_http)
+add_subdirectory(tests/manual_processor)
+add_subdirectory(tests/manual_client)
+
+

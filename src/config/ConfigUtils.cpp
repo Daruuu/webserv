@@ -196,6 +196,39 @@ bool isValidPath(const std::string& path) {
 
     return true;
 }
+
+long parseSize(const std::string& str) {
+    if (str.empty()) {
+        throw ConfigException("Empty size string");
+    }
+
+    char* end;
+    long value = std::strtol(str.c_str(), &end, 10);
+
+    if (end == str.c_str()) {
+        throw ConfigException(config::errors::invalid_characters + str);
+    }
+
+    std::string suffix = end;
+    if (!suffix.empty()) {
+        if (suffix.length() > 1) {
+            throw ConfigException(config::errors::invalid_characters + str);
+        }
+
+        char s = std::tolower(suffix[0]);
+        if (s == 'k') {
+            value *= 1024;
+        } else if (s == 'm') {
+            value *= 1024 * 1024;
+        } else if (s == 'g') {
+            value *= 1024 * 1024 * 1024;
+        } else {
+            throw ConfigException("Invalid size suffix: " + suffix);
+        }
+    }
+
+    return value;
+}
 } // namespace utils
 
 namespace debug {

@@ -42,6 +42,10 @@ bool Client::needsWrite() const {
     return !_outBuffer.empty();
 }
 
+bool Client::hasPendingData() const {
+	return !_outBuffer.empty() || !_responseQueue.empty();
+}
+
 time_t Client::getLastActivity() const {
     return _lastActivity;
 }
