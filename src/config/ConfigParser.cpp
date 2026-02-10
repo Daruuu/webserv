@@ -58,7 +58,7 @@ void ConfigParser::parse() {
 
     clean_file_str_ = preprocessConfigFile();
     config::utils::exportContentToLogFile(clean_file_str_, config::paths::log_file_config);
-    std::cout << "Exporting config file to config-clean.log";
+    std::cout << "Exporting config file to config-clean.log\n";
 
     // TODO: need to fix error order of brackets: '} {' should be error but now is
     if (!validateBalancedBrackets()) {
@@ -253,42 +253,49 @@ void ConfigParser::parseListen(ServerConfig& server, const std::vector< std::str
     /*
     std::cout << "current directive: [" << directive << "]" << std::endl;
     std::cout << "value [" << value << "]" << std::endl;
-
-                    function to check if pattern is correct respect to PORT:IP
+	function to check if pattern is correct respect to PORT:IP
     8080:192.178.1.1
     */
     if (pos != std::string::npos) {
         // Case: IP:PORT (127.0.0.1:8080)
-        std::string ip = value.substr(0, pos);
-        std::string port = value.substr(pos + 1);
+        std::string first = value.substr(0, pos);
+        std::string second = value.substr(pos + 1);
 
-        if (ip.find_first_not_of("0123456789") == std::string::npos) {
-            server.setPort(config::utils::stringToInt(ip));
-            server.setHost(port);
+        if (first.find_first_not_of("0123456789") == std::string::npos) {
+            server.setPort(config::utils::stringToInt(first));
+            if (!config::utils::isValidHost(second)) {
+                throw ConfigException(config::errors::invalid_ip_format + ": " + second);
+            }
+            server.setHost(second);
         } else {
-            server.setHost(ip);
-            server.setPort(config::utils::stringToInt(port));
+            // First part has non-digits - it's a host
+            // Validate host format
+            if (!config::utils::isValidHost(first)) {
+                throw ConfigException(config::errors::invalid_ip_format + ": " + first);
+            }
+            server.setHost(first);
+            server.setPort(config::utils::stringToInt(second));
         }
     } else {
-        // Caso: PORT (8080) or only HOST (localhost)
+        // Case: PORT (8080) or only HOST (localhost)
         // Simple heurística: Si tiene digitos es puerto, sino host
         if (value.find_first_not_of("0123456789") == std::string::npos) {
             server.setPort(config::utils::stringToInt(value));
         } else {
-            // TODO: move to cosntant
+            if (!config::utils::isValidHost(value)) {
+                throw ConfigException(config::errors::invalid_ip_format + ": " + value);
+            }
             server.setHost(value);
             server.setPort(80); // DEFAULT ?
         }
     }
 }
 
-void ConfigParser::parseMaxSizeBody(ServerConfig& server, std::vector< std::string >& tokens) {
+void ConfigParser::parseMaxSizeBody(ServerConfig& server, const std::vector< std::string >& tokens) {
     const std::string& maxSizeStr = config::utils::removeSemicolon(tokens[1]);
     if (!maxSizeStr.empty()) {
         config::utils::removeSemicolon(maxSizeStr);
-        std::cout << "client_max_body_size clean: " << maxSizeStr;
-
-        server.setMaxBodySize(config::utils::stringToInt(maxSizeStr));
+        server.setMaxBodySize(config::utils::parseSize(maxSizeStr));
     }
 }
 
@@ -339,17 +346,11 @@ void ConfigParser::parseUploadBonus(LocationConfig& loc, std::vector< std::strin
         throw ConfigException(config::errors::invalid_characters_in_upload_directive +
                               uploadPathClean);
     }
-    // TODO: Opcional: podriamos verificar que el directorio existe o se
-    // puede crear
+    // TODO: verificar que el directorio existe o se
     /*
-                                                                                                                                                                    if
-                    (!config::utils::directoryExists(uploadPath))
-                                                                                                                                                                    {
-                                                                                                                                                                                                                                    std::cerr << "Warning:
-                    upload_store directory does not exist: "
-                                                                                                                                                                                                                                                                                                                                                                    << uploadPath;
-                                                                                                                                                                    }
-                                                                                                                                                                    */
+			(!config::utils::directoryExists(uploadPath))
+			upload_store directory does not exist: "uploadPath;}
+    */
     loc.setUploadStore(uploadPathClean);
 }
 
@@ -364,6 +365,7 @@ void ConfigParser::parseReturn(LocationConfig& loc, std::vector< std::string >& 
 
         loc.setRedirectCode(config::section::default_return_code);
         loc.setRedirectUrl(cleanUrl);
+        loc.setRedirectParamCount(1);
     } else if (locTokens.size() == 3) {
         // Caso: return CODE URL;
         int code = config::utils::stringToInt(locTokens[1]);
@@ -379,6 +381,7 @@ void ConfigParser::parseReturn(LocationConfig& loc, std::vector< std::string >& 
         }
         loc.setRedirectCode(code);
         loc.setRedirectUrl(cleanUrl);
+        loc.setRedirectParamCount(2);
     } else {
         throw ConfigException(config::errors::missing_args_in_return);
     }
@@ -424,6 +427,11 @@ void ConfigParser::parseLocationBlock(ServerConfig& server, std::stringstream& s
     }
 
     std::string locationPath = tokens[pathIndex];
+    
+    if (!config::utils::isValidLocationPath(locationPath)) {
+        throw ConfigException(config::errors::invalid_location_path + ": " + locationPath);
+    }
+    
     LocationConfig loc;
     loc.setPath(locationPath);
 
@@ -448,7 +456,7 @@ void ConfigParser::parseLocationBlock(ServerConfig& server, std::stringstream& s
             }
         } else if (directive == config::section::autoindex) {
             std::string val = config::utils::removeSemicolon(locTokens[1]);
-            if (val != config::section::autoindex_on || val != config::section::autoindex_off) {
+            if (val != config::section::autoindex_on && val != config::section::autoindex_off) {
                 throw ConfigException(config::errors::invalid_autoindex);
             }
             loc.setAutoIndex(val == config::section::autoindex_on);
@@ -456,7 +464,11 @@ void ConfigParser::parseLocationBlock(ServerConfig& server, std::stringstream& s
                    directive == config::section::allow_methods ||
                    directive == config::section::limit_except) {
             for (size_t i = 1; i < locTokens.size(); ++i) {
-                loc.addMethod(config::utils::removeSemicolon(locTokens[i]));
+                std::string method = config::utils::removeSemicolon(locTokens[i]);
+                if (!config::utils::isValidHttpMethod(method)) {
+                    throw ConfigException(config::errors::invalid_http_method + ": " + method);
+                }
+                loc.addMethod(method);
             }
         } else if (directive == config::section::return_str) {
             parseReturn(loc, locTokens);

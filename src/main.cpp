@@ -1,6 +1,7 @@
 #include "config/ConfigException.hpp"
 #include "config/ConfigParser.hpp"
 #include "network/ServerManager.hpp"
+#include "config/ServerConfig.hpp"
 
 #include <exception>
 #include <fstream>
@@ -8,11 +9,6 @@
 #include <signal.h>
 #include <string>
 #include <vector>
-
-#include "config/ConfigException.hpp"
-#include "config/ConfigParser.hpp"
-#include "config/ServerConfig.hpp"
-#include "network/ServerManager.hpp"
 
 /**
  * Función principal del servidor web
@@ -57,14 +53,8 @@ int main(int argc, char* argv[]) {
         // - std::vector<ServerConfig> servers = parser.getServers();
         // - ServerManager server(&servers);
 
-        // Config mínima temporal (un solo server en 8080)
-        std::vector< ServerConfig > servers;
-        ServerConfig defaultServer;
-        defaultServer.setPort(8080);
-        servers.push_back(defaultServer);
-
         // Crear el gestor del servidor con la lista de servers
-        ServerManager server(&servers);
+        ServerManager server(&parser.getServers());
 
         /**
          * Iniciar el servidor en localhost:8080
@@ -108,7 +98,5 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     std::flush(std::cout);
-    return 0;
-
     return 0;
 }

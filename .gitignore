@@ -97,4 +97,4 @@ tests/manual_http_request
 .idea/
 
 /config/logs/
-.cache
+.cache/

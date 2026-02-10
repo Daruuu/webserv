@@ -13,43 +13,55 @@ set(CMAKE_CXX_EXTENSIONS OFF) # usa -std=c++98 en vez de -std=gnu++98
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 add_compile_options(-Wall -Wextra -Werror)
 
+# Add src as global include directory so relative includes like
+# #include "config/ServerConfig.hpp" work from any file
+include_directories(${CMAKE_SOURCE_DIR}/src)
+
 # Add all modules src/
-#include subdirectories of each module in src/
-#include_directories(${CMAKE_SOURCE_DIR}/src)
+add_subdirectory(src/cgi)
+add_subdirectory(src/client)
+add_subdirectory(src/common)
 add_subdirectory(src/config)
-#add_subdirectory(src/network)
+add_subdirectory(src/http)
+add_subdirectory(src/network)
+add_subdirectory(src/utils)
 
 # --- main executable ---
 
-#        src/main.cpp
 add_executable(webserv
-        src/config/mainConfig.cpp
+        src/main.cpp
 )
-add_compile_options(-Wall -Wextra -Werror)
 
-# Definimos la ruta raíz para que los sub-archivos la conozcan
-set(WEBSERV_ROOT ${CMAKE_SOURCE_DIR})
+# Include directories for webserv
+target_include_directories(webserv PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+)
 
 # link libs to executable.
 target_link_libraries(webserv PRIVATE
+        network
+        client
+        cgi
+        http
         config
-#        network
+        utils
+        common
 )
 
 #include_directories(${CMAKE_SOURCE_DIR}/lib)
 # testing (Optional)
 option(BUILD_TESTING "Build the testing tree." ON)
 if(BUILD_TESTING)
-    enable_testing()
-    add_subdirectory(tests/unit)
+        enable_testing()
+        add_subdirectory(tests/unit)
+        # Note: Legacy test directories disabled by default
+        # Enable with: cmake -DBUILD_LEGACY_TESTS=ON
+        option(BUILD_LEGACY_TESTS "Build legacy test directories (test_http, manual_processor, manual_client)" OFF)
+        if(BUILD_LEGACY_TESTS)
+                add_subdirectory(tests/test_http)
+                add_subdirectory(tests/manual_processor)
+                add_subdirectory(tests/manual_client)
+        endif()
 endif()
-
-#add_executable(Testing tests/unit/main_test.cpp)
-# Si quieres que el binario de los tests se cree,
-# tenemos que incluir la carpeta donde está tu código
-#add_subdirectory(src/http)
-add_subdirectory(tests/test_http)
-add_subdirectory(tests/manual_processor)
-add_subdirectory(tests/manual_client)
 
 

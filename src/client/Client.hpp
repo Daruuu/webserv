@@ -6,10 +6,10 @@
 #include <string>
 #include <vector>
 
-#include "../config/ServerConfig.hpp"
-#include "../http/HttpParser.hpp"
-#include "../http/HttpRequest.hpp"
-#include "../http/HttpResponse.hpp"
+#include "config/ServerConfig.hpp"
+#include "http/HttpParser.hpp"
+#include "http/HttpRequest.hpp"
+#include "http/HttpResponse.hpp"
 #include "RequestProcessor.hpp"
 
 class ServerManager;
@@ -74,6 +74,7 @@ class Client {
     int getFd() const;
     ClientState getState() const;
     bool needsWrite() const;
+    bool hasPendingData() const;
     // bool hasPendingData() const; // helper: true si hay data pendiente en cola o buffer
     time_t getLastActivity() const;
 

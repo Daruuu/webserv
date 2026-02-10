@@ -6,6 +6,8 @@
 #include <set>
 
 #include <stdexcept>
+#include "client/Client.hpp"
+#include <sys/epoll.h>
 #include <unistd.h>
 
 #define CLIENT_TIMEOUT_SECONDS 60
@@ -147,23 +149,32 @@ void ServerManager::handleNewConnection(int listener_fd) {
 void ServerManager::handleClientEvent(int client_fd, uint32_t events) {
     Client* client = clients_[client_fd];
 
-    if (events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP)) {
+    if (events & (EPOLLERR | EPOLLHUP)) {
         handleClientDisconnect(client_fd);
         return;
     }
 
+	bool pendingClose = false;
+	if (events & EPOLLRDHUP) {
+		pendingClose = true;
+	}
+
     if (events & EPOLLIN) {
         client->handleRead();
+		if (client->getState() == STATE_CLOSED) {
+			handleClientDisconnect(client_fd);
+			return;
+		}
     }
 
     if (events & EPOLLOUT) {
         client->handleWrite();
     }
 
-    if (client->getState() == STATE_CLOSED) {
-        handleClientDisconnect(client_fd);
-        return;
-    }
+	if (pendingClose && !client->hasPendingData()) {
+		handleClientDisconnect(client_fd);
+		return;
+	}
 
     updateClientEvents(client_fd);
 }

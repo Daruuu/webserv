@@ -2,6 +2,9 @@
 
 #include "AutoindexRenderer.hpp"
 #include "ErrorUtils.hpp"
+#include "http/HttpResponse.hpp"
+#include "RequestProcessorUtils.hpp"
+#include "common/StringUtils.hpp"
 #include "RequestProcessorUtils.hpp"
 #include "ResponseUtils.hpp"
 
@@ -79,7 +82,7 @@ static std::vector< char > generateAutoIndexBody(const std::string& dirPath,
 static bool handleDirectory(const HttpRequest& request, const ServerConfig* server,
                             const LocationConfig* location, const std::string& path,
                             std::vector< char >& body, HttpResponse& response) {
-    
+
     std::vector< std::string > indexes;
 
     if (location) {
@@ -109,7 +112,7 @@ static bool handleDirectory(const HttpRequest& request, const ServerConfig* serv
             break;
         }
     }
-// 
+//
     if (foundIndex) {
         // Double check: si el index es CGI segun config, no servir como estatico.
         if (isCgiRequestByConfig(location, indexPath)) {
@@ -126,6 +129,7 @@ static bool handleDirectory(const HttpRequest& request, const ServerConfig* serv
             return true;
         }
         if (!readFileToBody(indexPath, body)) {
+            buildErrorResponse(response, request, HTTP_STATUS_FORBIDDEN, false, server);
             // Si no se puede abrir el archivo (no existe o sin permisos de lectura),
             // devolvemos 403. No hace falta comprobar permisos con stat/access aparte.
             buildErrorResponse(response, request, 403, false, server);
@@ -143,7 +147,7 @@ static bool handleDirectory(const HttpRequest& request, const ServerConfig* serv
         return false;
     }
 
-    buildErrorResponse(response, request, 403, false, server);
+    buildErrorResponse(response, request, HTTP_STATUS_FORBIDDEN, false, server);
     return true;
 }
 
@@ -152,7 +156,7 @@ static bool handleRegularFile(const HttpRequest& request, const ServerConfig* se
                               HttpResponse& response) {
 
     if (request.getMethod() == HTTP_METHOD_POST) {
-        buildErrorResponse(response, request, 405, false, server);
+        buildErrorResponse(response, request, HTTP_STATUS_METHOD_NOT_ALLOWED, false, server);
         return true;
     }
     if (request.getMethod() == HTTP_METHOD_DELETE) {
@@ -160,14 +164,15 @@ static bool handleRegularFile(const HttpRequest& request, const ServerConfig* se
             body.clear();
             return false;
         }
-        buildErrorResponse(response, request, 500, true, server);
+        buildErrorResponse(response, request, HTTP_STATUS_INTERNAL_SERVER_ERROR, true, server);
         return true;
     }
 
     if (!readFileToBody(path, body)) {
         // Mismo criterio que para el index: si ifstream no puede abrir el archivo
         // (por permisos o porque ha desaparecido), respondemos 403 Forbidden.
-        buildErrorResponse(response, request, 403, false, server);
+        //buildErrorResponse(response, request, 403, false, server);
+        buildErrorResponse(response, request, HTTP_STATUS_FORBIDDEN, false, server);
         return true;
     }
     // Archivo estatico leido correctamente: asignamos Content-Type segun su extension.
@@ -225,6 +230,16 @@ static bool handleUpload(const HttpRequest& request, const ServerConfig* server,
 bool handleStaticPath(const HttpRequest& request, const ServerConfig* server,
                       const LocationConfig* location, const std::string& path,
                       std::vector< char >& body, HttpResponse& response) {
+
+    //if (request.getMethod() == HTTP_METHOD_POST) {
+    //    if (location && !location->getUploadStore().empty()) {
+    //         return handleUpload(request, server, location, path, body, response);
+    //    } else {
+    //         buildErrorResponse(response, request, HTTP_STATUS_METHOD_NOT_ALLOWED, false, server);
+    //         return true;
+    //    }
+    //}
+
     // Si es un POST y la location tiene configurado un upload_store, manejamos
     // la subida de archivo en lugar de servir un recurso estatico normal.
     if (request.getMethod() == HTTP_METHOD_POST && location &&
@@ -235,7 +250,7 @@ bool handleStaticPath(const HttpRequest& request, const ServerConfig* server,
     bool isDir = false;
     bool isReg = false;
     if (!getPathInfo(path, isDir, isReg)) {
-        buildErrorResponse(response, request, 404, false, server);
+        buildErrorResponse(response, request, HTTP_STATUS_NOT_FOUND, false, server);
         return true;
     }
 
@@ -243,7 +258,7 @@ bool handleStaticPath(const HttpRequest& request, const ServerConfig* server,
         return handleDirectory(request, server, location, path, body, response);
 
     if (!isReg) {
-        buildErrorResponse(response, request, 403, false, server);
+        buildErrorResponse(response, request, HTTP_STATUS_FORBIDDEN, false, server);
         return true;
     }
 

@@ -35,6 +35,10 @@ bool Client::needsWrite() const {
     return !_outBuffer.empty();
 }
 
+bool Client::hasPendingData() const {
+	return !_outBuffer.empty() || !_responseQueue.empty();
+}
+
 // bool Client::hasPendingData() const {
 //     // Helper para saber si el cliente tiene algo pendiente por enviar:
 //     // se usa para decidir si mantener EPOLLOUT activo en el loop.
