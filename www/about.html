@@ -3,89 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About - Webserv 42</title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <title>LaserWeb — The Squad</title>
+    <link rel="stylesheet" href="/css/laserweb.css">
 </head>
 <body>
+    <div class="page">
+        <header>
+            <h1 class="logo">L<span>Λ</span>S<span>Ξ</span>RW<span>Ξ</span>B</h1>
+        </header>
 
-    <header class="hero">
-        <h1>Sobre <span class="accent">webserv</span></h1>
-        <p class="subtitle">Un servidor HTTP/1.1 construido desde cero como parte del curriculum de 42.</p>
-    </header>
+        <nav class="nav-hud">
+            <a href="/">THE HUD</a>
+            <a href="/upload.html">LOAD LASER</a>
+            <a href="/about.html">THE SQUAD</a>
+            <a href="/target-list.html">TARGET LIST</a>
+            <a href="/images/">TACTICAL SCANNER</a>
+        </nav>
 
-    <nav>
-        <ul>
-            <li><a href="/">Inicio</a></li>
-            <li><a href="/about.html" class="active">About</a></li>
-        </ul>
-    </nav>
+        <main class="panel">
+            <h2>Command Staff — Laser Squad</h2>
+            <p class="back-row"><a href="/" class="btn btn-back">&larr; Volver al HUD</a></p>
 
-    <main class="container">
-
-        <div class="section">
-            <h2 class="section-title"><span class="icon">&#128640;</span> Que es webserv?</h2>
-            <p class="section-desc">
-                Webserv es un proyecto de la escuela 42 que consiste en implementar un servidor HTTP
-                compatible con HTTP/1.1, similar a Nginx. Esta escrito completamente en C++98 sin
-                usar librerias externas, utilizando I/O no bloqueante con epoll para manejar
-                multiples conexiones de forma eficiente.
-            </p>
-        </div>
-
-        <div class="section">
-            <h2 class="section-title"><span class="icon">&#9889;</span> Funcionalidades</h2>
-            <div class="cards">
-                <div class="card">
-                    <h3>Metodos HTTP</h3>
-                    <p>Soporte completo para GET, POST y DELETE con manejo correcto de headers y body.</p>
+            <div class="squad-grid">
+                <div class="squad-card">
+                    <img src="/images/team/ana.png" alt="Ana Gabriela Burgos" class="squad-photo">
+                    <h3>Ana Gabriela Burgos — The Architect</h3>
+                    <p class="role">Lógica de flujo y filtrado de señales HTTP</p>
+                    <p>Diseña y mantiene el flujo de procesamiento de peticiones, el filtrado de señales HTTP y la arquitectura del cliente y del RequestProcessor.</p>
+                    <p><a href="/ana.html" class="btn">Ver informe de misión</a></p>
                 </div>
-                <div class="card">
-                    <h3>Archivos estaticos</h3>
-                    <p>Servir archivos HTML, CSS, JS, imagenes y mas desde el directorio raiz configurado.</p>
+                <div class="squad-card">
+                    <img src="/images/team/carles.png" alt="Carles Pujades" class="squad-photo">
+                    <h3>Carles Pujades — The Executor</h3>
+                    <p class="role">Ignición y gestión de subprocesos</p>
+                    <p>Responsable de la ignición y gestión de procesos CGI (CgiExecutor, CgiProcess) y de la ejecución de scripts en el servidor.</p>
+                    <p><a href="/carles.html" class="btn">Ver informe de misión</a></p>
                 </div>
-                <div class="card">
-                    <h3>CGI</h3>
-                    <p>Ejecucion de scripts Python y PHP a traves del protocolo Common Gateway Interface.</p>
-                </div>
-                <div class="card">
-                    <h3>Upload de archivos</h3>
-                    <p>Subida de archivos al servidor mediante peticiones POST con multipart/form-data.</p>
-                </div>
-                <div class="card">
-                    <h3>Virtual Hosts</h3>
-                    <p>Multiples servidores virtuales en diferentes puertos con configuraciones independientes.</p>
-                </div>
-                <div class="card">
-                    <h3>Paginas de error</h3>
-                    <p>Paginas de error personalizadas (404, 500, etc.) configurables por servidor.</p>
-                </div>
-                <div class="card">
-                    <h3>Autoindex</h3>
-                    <p>Listado automatico de directorios cuando no se encuentra un archivo indice.</p>
-                </div>
-                <div class="card">
-                    <h3>Non-blocking I/O</h3>
-                    <p>Manejo eficiente de conexiones multiples usando epoll sin hilos adicionales.</p>
+                <div class="squad-card">
+                    <img src="/images/team/daru.png" alt="Darunny Salazar" class="squad-photo">
+                    <h3>Darunny Salazar — The Operator</h3>
+                    <p class="role">Protocolos de seguridad y mapas de red</p>
+                    <p>Gestiona la configuración del servidor, los protocolos de seguridad y los mapas de red (parsing de config, locations, permisos).</p>
+                    <p><a href="/daru.html" class="btn">Ver informe de misión</a></p>
                 </div>
             </div>
-        </div>
 
-        <div class="section">
-            <h2 class="section-title"><span class="icon">&#128736;</span> Configuracion</h2>
-            <p class="section-desc">
-                El servidor se configura mediante archivos de configuracion similares a los de Nginx.
-                Se pueden definir bloques <code>server</code> con directivas como <code>listen</code>,
-                <code>root</code>, <code>index</code>, y bloques <code>location</code> para cada ruta.
-            </p>
-        </div>
-
-    </main>
-
-    <footer>
-        <p>
-            webserv 42 &mdash; <a href="/">Volver al inicio</a>
-        </p>
-    </footer>
-
+            <section style="margin-top:2rem;">
+                <h2 class="page-title">Registrar escuadrón para partida</h2>
+                <p style="color:#808090; font-size:0.9rem; margin-bottom:1rem;">
+                    Introduce el nombre de tu grupo de láser para jugar. Así el sistema identifica tu escuadrón en las partidas.
+                    Opcionalmente añade los callsigns o roles de los miembros.
+                </p>
+                <form action="/post_body" method="POST">
+                    <div class="form-row">
+                        <label for="team-name">Nombre de tu grupo / escuadrón láser</label>
+                        <input type="text" id="team-name" name="team_name" placeholder="ej: SQUAD NOVA, PHANTOM LASERS, STRIKE ONE" required>
+                    </div>
+                    <div class="form-row">
+                        <label for="team-members">Miembros del escuadrón (opcional)</label>
+                        <textarea id="team-members" name="members" rows="3" placeholder="ej: Piloto Alfa, Artillero, Operador de radar"></textarea>
+                    </div>
+                    <button type="submit" class="btn">Registrar escuadrón</button>
+                </form>
+                <p style="margin-top:0.8rem; font-size:0.8rem; color:#808090;">
+                    Los datos se envían al servidor (POST). En una versión extendida se podrían guardar para las partidas.
+                </p>
+            </section>
+        </main>
+    </div>
 </body>
 </html>

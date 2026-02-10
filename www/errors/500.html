@@ -2,45 +2,21 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>500 - Error interno</title>
-    <link rel="stylesheet" href="/css/styles.css">
-    <style>
-        .error-page {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 80vh;
-            text-align: center;
-            padding: 2rem;
-        }
-        .error-code {
-            font-size: 8rem;
-            font-weight: 900;
-            color: var(--danger);
-            line-height: 1;
-            letter-spacing: -0.04em;
-            opacity: 0.8;
-        }
-        .error-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 1rem 0 0.5rem;
-        }
-        .error-desc {
-            color: var(--text-secondary);
-            max-width: 400px;
-            margin-bottom: 2rem;
-        }
-    </style>
+    <title>LaserWeb - Error 500</title>
+    <link rel="stylesheet" href="/css/laserweb.css">
 </head>
 <body>
-    <div class="error-page">
-        <div class="error-code">500</div>
-        <h1 class="error-title">Error interno del servidor</h1>
-        <p class="error-desc">Ha ocurrido un error inesperado. Intenta de nuevo mas tarde.</p>
-        <a href="/" class="btn btn-primary">Volver al inicio</a>
+<div class="page">
+    <div class="panel error-hud">
+        <div class="code error-blink">500</div>
+        <div class="message">
+            <p><strong>ERROR INTERNO DEL SERVIDOR</strong></p>
+            <p>Se ha producido un fallo inesperado en el núcleo de control láser.</p>
+        </div>
+        <div class="back-row">
+            <a href="/" class="btn btn-back">Volver al inicio</a>
+        </div>
     </div>
+</div>
 </body>
 </html>
