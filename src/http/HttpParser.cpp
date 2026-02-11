@@ -1,6 +1,6 @@
 #include "HttpParser.hpp"
 
-HttpParser::HttpParser() { reset(); }
+HttpParser::HttpParser() : _maxBodySize(0) { reset(); }
 
 HttpParser::~HttpParser() {}
 
@@ -9,6 +9,8 @@ State HttpParser::getState() const { return _state; }
 const HttpRequest& HttpParser::getRequest() const { return _request; }
 
 void HttpParser::reset() {
+  // Limpia estado de parsing y contenedores de la petición actual. No toca _buffer
+  // (puede contener datos de la siguiente petición pipelined).
   _state = PARSING_START_LINE;
   _stateChunk = CHUNK_SIZE;
   _request.clear();
@@ -17,7 +19,8 @@ void HttpParser::reset() {
   _isChunked = false;
   _bytesRead = 0;
   _chunkSize = 0;
-  //_maxBodySize = 0; // TODO: setear desde config (Daru)
+  // _maxBodySize NO se resetea: se establece una vez en el constructor de Client
+  // y debe persistir para que todas las peticiones Keep-Alive usen el mismo límite.
 }
 
 /*

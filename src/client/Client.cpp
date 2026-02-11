@@ -1,4 +1,5 @@
 #include "Client.hpp"
+#include "RequestProcessorUtils.hpp"
 
 #include <sys/socket.h>
 #include <unistd.h>
@@ -17,7 +18,11 @@ Client::Client(int fd, const std::vector<ServerConfig>* configs, int listenPort)
       _serverManager(0),
       _cgiProcess(0),
       _closeAfterWrite(false),
-      _responseQueue() {}
+      _responseQueue() {
+  // max_body_size no cambia durante la conexión; lo setemos una vez al crear el Client
+  const ServerConfig* server = selectServerByPort(listenPort, configs);
+  if (server) _parser.setMaxBodySize(server->getMaxBodySize());
+}
 
 Client::~Client() {}
 

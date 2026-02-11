@@ -13,9 +13,16 @@ void HttpParser::parseBody() {
 }
 
 /*
- * Maneja el caso donde concemos el tamano exacto (content-length) del body.
+ * Maneja el caso donde conocemos el tamano exacto (content-length) del body.
+ * Capa estática: comprobamos ANTES de leer si el total esperado supera el límite.
  */
 void HttpParser::parseBodyFixedLength() {
+  // Check si el tamano total esperado supera el límite.
+  if (_maxBodySize > 0 && _contentLength > _maxBodySize) {
+    _state = ERROR;
+    return;
+  }
+
   std::size_t remaining = 0;
   if (_contentLength > _bytesRead) remaining = _contentLength - _bytesRead;
 
@@ -96,6 +103,13 @@ bool HttpParser::handleChunkDataState() {
   if (_chunkSize > 0)
     _request.addBody(_buffer.begin(), _buffer.begin() + _chunkSize);
   _buffer.erase(0, needed);  // datos + CRLF
+
+  // Límite de body desde config: rechazar si chunked body supera max_body_size
+  if (_maxBodySize > 0 &&
+      _request.getBody().size() > _maxBodySize) {
+    _state = ERROR;
+    return false;
+  }
 
   _stateChunk = CHUNK_SIZE;
   return true;

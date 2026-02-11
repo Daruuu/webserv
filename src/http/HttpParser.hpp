@@ -32,6 +32,9 @@ class HttpParser {
   State getState() const;
   const HttpRequest& getRequest() const;
 
+  // Set max body size from config (client_max_body_size). Call before consume().
+  void setMaxBodySize(std::size_t maxSize) { _maxBodySize = maxSize; }
+
  private:
   // Estado y datos internos
   State _state;
@@ -43,7 +46,7 @@ class HttpParser {
   bool _isChunked;
   std::size_t _bytesRead;
   std::size_t _chunkSize;  // tamaño del chunk actual
-  // std::size_t _maxBodySize;
+  std::size_t _maxBodySize;  // límite desde config; 0 = sin límite
 
   // Helpers generales
   bool extractLine(std::string& line);
