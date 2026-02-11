@@ -122,7 +122,7 @@ Decide qué tipo de recurso es y actúa:
 ## 6. ResponseUtils y SessionUtils
 
 - **fillBaseResponse():** Asigna status, Connection, Content-Type, body, y llama a `addSessionCookieIfNeeded()`.
-- **addSessionCookieIfNeeded():** Añade `Set-Cookie: session_id=...` en respuestas 2xx si no hay sesión válida.
+- **addSessionCookieIfNeeded():** Añade `Set-Cookie: id=...` en respuestas 2xx si no hay sesión válida.
 - **ErrorUtils / buildErrorResponse():** Construye respuestas de error (404, 405, 413, 500) con páginas personalizadas o HTML por defecto.
 
 ---

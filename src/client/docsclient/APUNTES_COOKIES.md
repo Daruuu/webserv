@@ -52,19 +52,19 @@ Cookie: nombre1=valor1; nombre2=valor2
      │  1. GET /index.html          │
      │     (sin Cookie)             │
      │─────────────────────────────>│
-     │                              │  ¿Tiene session_id válida? NO
-     │                              │  → Generar nuevo session_id
+     │                              │  ¿Tiene cookie "id" válida? NO
+     │                              │  → Generar nuevo id
      │                              │  → Guardar en memoria
      │  2. 200 OK                   │
-     │     Set-Cookie: session_id=abc123; Path=/
+     │     Set-Cookie: id=abc123; Path=/
      │<─────────────────────────────│
      │                              │
      │  (cliente guarda la cookie)   │
      │                              │
      │  3. GET /index.html           │
-     │     Cookie: session_id=abc123│
+     │     Cookie: id=abc123         │
      │─────────────────────────────>│
-     │                              │  ¿Tiene session_id válida? SÍ
+     │                              │  ¿Tiene cookie "id" válida? SÍ
      │                              │  → No añadir Set-Cookie
      │  4. 200 OK                   │
      │     (sin Set-Cookie)          │
@@ -93,18 +93,18 @@ Cookie: nombre1=valor1; nombre2=valor2
 4. **addSessionCookieIfNeeded()**:
    - Solo actúa si `statusCode` es 2xx (200–299).
    - Lee `request.getHeader("cookie")`.
-   - Busca `session_id=XXX` en la cadena.
-   - Si no hay cookie o el `session_id` no está en el almacén → genera uno nuevo, lo guarda, añade `Set-Cookie`.
+   - Busca `id=XXX` en la cadena.
+   - Si no hay cookie o el `id` no está en el almacén → genera uno nuevo, lo guarda, añade `Set-Cookie`.
    - Si ya tiene sesión válida → no hace nada.
 
 ### Funciones principales
 
 ```cpp
-// Genera un ID único: timestamp_contador_random
-std::string generateSessionId();
+// Genera un ID único: timestamp_counter_random
+std::string createSessionId();
 
-// Extrae "valor" de "Cookie: session_id=valor" o "session_id=valor; otros=..."
-std::string extractSessionIdSimple(const std::string& cookieHeader);
+// Extrae "valor" de "Cookie: id=valor" o "id=valor; otros=..."
+std::string extractIdFromCookie(const std::string& cookieHeader);
 
 // Añade Set-Cookie si el cliente no tiene sesión válida
 void addSessionCookieIfNeeded(HttpResponse& response, const HttpRequest& request, int statusCode);
@@ -113,7 +113,7 @@ void addSessionCookieIfNeeded(HttpResponse& response, const HttpRequest& request
 ### Almacén de sesiones
 
 - `static std::set<std::string> validSessions`
-- Se guardan los `session_id` que hemos generado y enviado.
+- Se guardan los `id` que hemos generado y enviado.
 - Si el cliente vuelve con ese ID en `Cookie`, lo reconocemos como sesión válida.
 - **Nota:** En esta implementación las sesiones no expiran (en memoria durante la ejecución del servidor).
 
@@ -134,7 +134,7 @@ Host: localhost
 ```
 HTTP/1.1 200 OK
 Content-Type: text/html
-Set-Cookie: session_id=1739123456_0_789012; Path=/
+Set-Cookie: id=1739123456_0_789012; Path=/
 Content-Length: 1234
 
 <!DOCTYPE html>...
@@ -146,7 +146,7 @@ Content-Length: 1234
 ```
 GET /index.html HTTP/1.1
 Host: localhost
-Cookie: session_id=1739123456_0_789012
+Cookie: id=1739123456_0_789012
 
 ```
 
@@ -176,7 +176,7 @@ python3 tests/scripts/verify.py
 ```
 
 El test de cookies en `verify.py`:
-1. Hace GET sin cookie → espera `Set-Cookie` con `session_id=...`
+1. Hace GET sin cookie → espera `Set-Cookie` con `id=...`
 2. Hace GET con esa cookie → espera 200 OK
 
 ---

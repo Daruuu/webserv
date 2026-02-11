@@ -2,62 +2,78 @@
 
 #include <set>
 #include <sstream>
+#include <string>
 #include <cstdlib>
 #include <ctime>
-#include <cstdio>
 
-namespace {
-
-std::string generateSessionId() {
-    static unsigned int counter = 0;
-    std::ostringstream oss;
-    oss << std::time(NULL) << "_" << (counter++) << "_" << (rand() % 1000000);
-    return oss.str();
+// creates a unique id for the cookie (timestamp + counter + random)
+std::string createSessionId()
+{
+    static int counter = 0;
+    std::ostringstream ss;
+    ss << time(NULL) << "_" << counter << "_" << (rand() % 100000);
+    counter++;
+    return ss.str();
 }
 
-// Parse Cookie header: "session_id=value" or "name1=v1; session_id=value"
-std::string extractSessionIdSimple(const std::string& cookieHeader) {
-    const std::string key = "session_id=";
-    size_t pos = cookieHeader.find(key);
+// finds the value of our "id" cookie in the Cookie header
+// example: Cookie: id=12345_0_999; other=val  -> returns "12345_0_999"
+std::string extractIdFromCookie(const std::string& cookieHeader)
+{
+    std::string key = "id=";
+    std::string::size_type pos = cookieHeader.find(key);
     if (pos == std::string::npos)
         return "";
 
-    size_t valueStart = pos + key.size();
-    size_t valueEnd = cookieHeader.find(';', valueStart);
-    if (valueEnd == std::string::npos)
-        valueEnd = cookieHeader.size();
+    std::string::size_type startPos = pos + key.length();
+    std::string::size_type endPos = cookieHeader.find(';', startPos);
+    if (endPos == std::string::npos)
+        endPos = cookieHeader.length();
 
-    std::string value = cookieHeader.substr(valueStart, valueEnd - valueStart);
-    // Trim trailing space
-    while (!value.empty() && (value.back() == ' ' || value.back() == '\t'))
-        value.pop_back();
-    return value;
+    std::string result = cookieHeader.substr(startPos, endPos - startPos);
+
+    // remove trailing spaces
+    while (result.size() > 0 && (result[result.size() - 1] == ' ' || result[result.size() - 1] == '\t'))
+    {
+        result.erase(result.size() - 1);
+    }
+    return result;
 }
 
-} // namespace
-
-void addSessionCookieIfNeeded(HttpResponse& response, const HttpRequest& request, int statusCode) {
-    if (statusCode < 200 || statusCode >= 300)
+void addSessionCookieIfNeeded(HttpResponse& response, const HttpRequest& request, int statusCode)
+{
+    // only add cookie for 200-299 responses
+    if (statusCode < 200 || statusCode > 299)
         return;
 
+    // list of ids we created that are valid
     static std::set<std::string> validSessions;
-    static bool seeded = false;
-    if (!seeded) {
-        srand(static_cast<unsigned>(time(NULL)));
-        seeded = true;
+
+    // init rand once
+    static bool alreadyInitialized = false;
+    if (alreadyInitialized == false)
+    {
+        srand((unsigned int)time(NULL));
+        alreadyInitialized = true;
     }
 
-    std::string cookieHeader = request.getHeader("cookie");
-    std::string sessionId = extractSessionIdSimple(cookieHeader);
+    // see what cookie the client sends
+    std::string headerCookie = request.getHeader("cookie");
+    std::string receivedId = extractIdFromCookie(headerCookie);
 
-    bool hasValidSession = false;
-    if (!sessionId.empty() && validSessions.find(sessionId) != validSessions.end()) {
-        hasValidSession = true;
+    // check if the id they send exists in our list
+    bool isValid = false;
+    if (receivedId != "" && validSessions.find(receivedId) != validSessions.end())
+    {
+        isValid = true;
     }
 
-    if (!hasValidSession) {
-        sessionId = generateSessionId();
-        validSessions.insert(sessionId);
-        response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/");
+    // if no cookie or invalid, give them a new one
+    if (isValid == false)
+    {
+        std::string newId = createSessionId();
+        validSessions.insert(newId);
+        std::string cookieValue = "id=" + newId + "; Path=/";
+        response.setHeader("Set-Cookie", cookieValue);
     }
 }
