@@ -22,7 +22,7 @@ WHITE			= \033[0;37m
 NAME 		= webserver
 
 CXX			= c++
-CXXFLAGS	= -Wall -Wextra -Werror -std=c++98 -pedantic -Wshadow
+CXXFLAGS	= -Wall -Wextra -Werror -std=c++98 -pedantic -Wshadow -g	# -g is esential for valgrind
 LDFLAGS		=
 
 SRC_DIR		= src
@@ -30,7 +30,35 @@ BIN_DIR		= bin
 BUILD_DIR	= build
 INCLUDE 	= -I$(SRC_DIR) -Iinclude
 
-SRC_FILES = $(SRC_DIR)/main.cpp 
+SRC_FILES = $(SRC_DIR)/main.cpp \
+			$(SRC_DIR)/network/EpollWrapper.cpp \
+			$(SRC_DIR)/network/TcpListener.cpp \
+			$(SRC_DIR)/network/ServerManager.cpp \
+			$(SRC_DIR)/cgi/CgiExecutor.cpp \
+			$(SRC_DIR)/cgi/CgiProcess.cpp \
+			$(SRC_DIR)/client/Client.cpp \
+			$(SRC_DIR)/client/ClientCgi.cpp \
+			$(SRC_DIR)/client/ErrorUtils.cpp \
+			$(SRC_DIR)/client/ResponseUtils.cpp \
+			$(SRC_DIR)/client/SessionUtils.cpp \
+			$(SRC_DIR)/client/AutoindexRenderer.cpp \
+			$(SRC_DIR)/client/StaticPathHandler.cpp \
+			$(SRC_DIR)/client/RequestProcessorUtils.cpp \
+			$(SRC_DIR)/client/RequestProcessor.cpp \
+			$(SRC_DIR)/http/HttpHeaderUtils.cpp \
+			$(SRC_DIR)/http/HttpParser.cpp \
+			$(SRC_DIR)/http/HttpParserStartLine.cpp \
+			$(SRC_DIR)/http/HttpParserHeaders.cpp \
+			$(SRC_DIR)/config/ServerConfig.cpp \
+			$(SRC_DIR)/config/LocationConfig.cpp \
+			$(SRC_DIR)/config/ConfigParser.cpp \
+			$(SRC_DIR)/config/ConfigException.cpp \
+			$(SRC_DIR)/config/ConfigUtils.cpp \
+			$(SRC_DIR)/http/HttpParserBody.cpp \
+			$(SRC_DIR)/http/HttpRequest.cpp \
+			$(SRC_DIR)/http/HttpResponse.cpp \
+			$(SRC_DIR)/common/StringUtils.cpp
+			
 
 
 #OBJ_FILES = $(SRC_FILES:%.cpp=$(BUILD_DIR)/%.o) # works with vpath
@@ -84,12 +112,67 @@ leaks: re
 debug: CXXFLAGS += -g -fsanitize=address -DTDEBUG=1
 debug: LDFLAGS += -fsanitize=address
 debug: re
+####################################HTTP TESTS#######################################
+# tests (manual) - HTTP (parser/request)
+TEST_HTTP_REQUEST_BIN = tests/manual_http_request
+TEST_HTTP_PARSER_BIN  = tests/manual_http_parser
 
+TEST_HTTP_REQUEST_SRC = tests/manual_http_request.cpp \
+				   $(SRC_DIR)/http/HttpRequest.cpp
+
+TEST_HTTP_PARSER_SRC = tests/manual_http_parser.cpp \
+				  $(SRC_DIR)/http/HttpParser.cpp \
+				  $(SRC_DIR)/http/HttpParserStartLine.cpp \
+				  $(SRC_DIR)/http/HttpParserHeaders.cpp \
+				  $(SRC_DIR)/http/HttpParserBody.cpp \
+				  $(SRC_DIR)/http/HttpRequest.cpp
+
+TEST_REQUEST_PROCESSOR_BIN = tests/manual_request_processor
+TEST_REQUEST_PROCESSOR_SRC = tests/manual_processor/manual_request_processor.cpp \
+				  $(SRC_DIR)/client/ErrorUtils.cpp \
+				  $(SRC_DIR)/client/ResponseUtils.cpp \
+				  $(SRC_DIR)/client/SessionUtils.cpp \
+				  $(SRC_DIR)/client/StaticPathHandler.cpp \
+				  $(SRC_DIR)/client/RequestProcessor.cpp \
+				  $(SRC_DIR)/http/HttpRequest.cpp \
+				  $(SRC_DIR)/http/HttpResponse.cpp
+
+TEST_CLIENT_BIN = tests/manual_client
+TEST_CLIENT_SRC = tests/manual_client/manual_client.cpp \
+				  $(SRC_DIR)/client/Client.cpp \
+				  $(SRC_DIR)/client/ErrorUtils.cpp \
+				  $(SRC_DIR)/client/ResponseUtils.cpp \
+				  $(SRC_DIR)/client/SessionUtils.cpp \
+				  $(SRC_DIR)/client/StaticPathHandler.cpp \
+				  $(SRC_DIR)/client/RequestProcessor.cpp \
+				  $(SRC_DIR)/http/HttpParser.cpp \
+				  $(SRC_DIR)/http/HttpParserStartLine.cpp \
+				  $(SRC_DIR)/http/HttpParserHeaders.cpp \
+				  $(SRC_DIR)/http/HttpParserBody.cpp \
+				  $(SRC_DIR)/http/HttpRequest.cpp \
+				  $(SRC_DIR)/http/HttpResponse.cpp
+
+test_http_request:
+	@$(CXX) $(CXXFLAGS) $(INCLUDE) $(TEST_HTTP_REQUEST_SRC) -o $(TEST_HTTP_REQUEST_BIN) \
+		&& ./$(TEST_HTTP_REQUEST_BIN)
+
+test_http_parser:
+	@$(CXX) $(CXXFLAGS) $(INCLUDE) $(TEST_HTTP_PARSER_SRC) -o $(TEST_HTTP_PARSER_BIN) \
+		&& ./$(TEST_HTTP_PARSER_BIN)
+
+test_request_processor:
+	@$(CXX) $(CXXFLAGS) $(INCLUDE) $(TEST_REQUEST_PROCESSOR_SRC) -o $(TEST_REQUEST_PROCESSOR_BIN) \
+		&& ./$(TEST_REQUEST_PROCESSOR_BIN)
+
+test_client:
+	@$(CXX) $(CXXFLAGS) $(INCLUDE) $(TEST_CLIENT_SRC) -o $(TEST_CLIENT_BIN) \
+		&& ./$(TEST_CLIENT_BIN)
+####################################HTTP TESTS#######################################
 bear: fclean
 	bear -- $(MAKE) all
-	
+
 # extras
 -include $(DEP_FILES)
 
-.PHONY: all clean fclean re bear debug leak
+.PHONY: all clean fclean re bear debug leak test_http_request test_http_parser test_request_processor test_client
 #.SILENT:

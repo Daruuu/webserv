@@ -132,7 +132,6 @@ Proyecto realizado en la **Academia 42** como parte del cursus de C++:
 
 ## 📚 Referencias
 
-* [RFC 2616 – HTTP/1.1 Specification](https://www.rfc-editor.org/rfc/rfc2616)
-* [RFC 7230 – Message Syntax and Routing](https://www.rfc-editor.org/rfc/rfc7230)
+*  [RFC 9110: HTTP Semantics](https://www.rfc-editor.org/rfc/rfc9110.html)
 * [NGINX Configuration Guide](https://nginx.org/en/docs/)
 * [Beej’s Guide to Network Programming](https://beej.us/guide/bgnet/)
