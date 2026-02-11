@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cerrno>
 #include <sstream>
 
 #include "Client.hpp"
@@ -110,6 +111,9 @@ void Client::handleCgiPipe(int pipe_fd, size_t events) {
         _cgiProcess->advanceBodyBytesWritten(static_cast<size_t>(written));
         _lastActivity = std::time(0);
       }
+      // Note: if written < 0 with EAGAIN/EWOULDBLOCK, we'll retry on next
+      // EPOLLOUT This is correct for non-blocking I/O - offset not advanced,
+      // will retry
     }
     if (_cgiProcess->isRequestBodySent()) {
       _serverManager->unregisterCgiPipe(pipe_fd);
@@ -127,9 +131,25 @@ void Client::handleCgiPipe(int pipe_fd, size_t events) {
       _lastActivity = std::time(0);
       return;
     }
-    if (bytes == 0 || bytes < 0) {
+    if (bytes == 0) {
+      // EOF - Pipe closed by CGI process
       _serverManager->unregisterCgiPipe(pipe_fd);
       _cgiProcess->closePipeOut();
+      finalizeCgiResponse();
+      delete _cgiProcess;
+      _cgiProcess = 0;
+      return;
+    }
+    if (bytes < 0) {
+      // Check for non-blocking I/O errors
+      if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        // No data available right now, try again later
+        return;
+      }
+      // Real error occurred
+      _serverManager->unregisterCgiPipe(pipe_fd);
+      _cgiProcess->closePipeOut();
+      // TODO: Maybe set error 500 in response?
       finalizeCgiResponse();
       delete _cgiProcess;
       _cgiProcess = 0;

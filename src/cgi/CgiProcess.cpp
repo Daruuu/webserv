@@ -32,19 +32,19 @@ CgiProcess::CgiProcess(const std::string& script_path,
 
 CgiProcess::~CgiProcess() {
   // Pipes will be closed by the caller (Client/ServerManager)
-  // Don't close them here to avoid double-close issues
 }
 
 bool CgiProcess::appendResponseData(const char* data, size_t len) {
   // Append to raw response
   complete_response_.append(data, len);
 
-  // Try to parse headers if not already done
-  if (!headers_complete_) {
-    return tryParseHeaders();
+  // If headers are already successfully parsed, just append to body
+  if (headers_complete_) {
+    response_body_.append(data, len);
+    return true;
   }
 
-  return true;  // Headers already complete
+  return tryParseHeaders();
 }
 
 bool CgiProcess::tryParseHeaders() {
@@ -76,11 +76,11 @@ bool CgiProcess::tryParseHeaders() {
       line.erase(line.length() - 1);
 
     if (line.substr(0, 7) == "Status:") {
-      // Parse status code
       int code = std::atoi(line.substr(8).c_str());
-      if (code > 0) {
+      if (code >= 100 && code < 600) {
         status_code_ = code;
       }
+      // If invalid or 0, keep default 200 status
       break;
     }
   }

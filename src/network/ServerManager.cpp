@@ -1,6 +1,7 @@
 #include "ServerManager.hpp"
 
 #include <sys/epoll.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include <cerrno>
@@ -98,9 +99,17 @@ void ServerManager::run() {
 
       if (num_events == 0) {
         // Idle cycle or timeout, good time to check timeouts
-        // TODO: remove debug comment
+        // TODO: remove log
         std::cout << " Server idle..." << std::endl;
       }
+
+      // Reap any terminated child CGI processes to prevent zombies
+      // Non-blocking call - returns immediately if no children have exited
+      while (waitpid(-1, NULL, WNOHANG) > 0) {
+        // TODO: remove log
+        std::cout << "=> child process reaped :)" << std::endl;
+      }
+
       checkTimeouts();
     } catch (const std::exception& e) {
       std::cerr << "Error in event loop: " << e.what() << std::endl;

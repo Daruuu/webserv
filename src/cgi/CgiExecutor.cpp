@@ -122,13 +122,16 @@ CgiProcess* CgiExecutor::executeAsync(const HttpRequest& request,
     char** envp = createEnvArray(env_map);
 
     // Prepare arguments - use just the script filename after chdir
+    // Prefix with ./ for relative paths to work with /usr/bin/env and direct
+    // execution
+    std::string relative_script = "./" + script_name;
     char* args[3];
     if (!interpreter_path.empty()) {
       args[0] = strdup(interpreter_path.c_str());
-      args[1] = strdup(script_name.c_str());
+      args[1] = strdup(relative_script.c_str());
       args[2] = NULL;
     } else {
-      args[0] = strdup(script_name.c_str());
+      args[0] = strdup(relative_script.c_str());
       args[1] = NULL;
       args[2] = NULL;
     }
@@ -180,7 +183,6 @@ std::map<std::string, std::string> CgiExecutor::prepareEnvironment(
 
   env["SCRIPT_FILENAME"] = script_path;
 
-  // Extract SCRIPT_NAME from URI (path component, no query string)
   std::string uri = request.getPath();
   if (!request.getQuery().empty()) {
     uri += "?";
@@ -210,8 +212,14 @@ std::map<std::string, std::string> CgiExecutor::prepareEnvironment(
 
   // Step 5: Client/Server Connection Information
 
-  env["REMOTE_ADDR"] = "127.0.0.1";  // TODO: Extract from socket
+  env["REMOTE_ADDR"] =
+      "127.0.0.1";  // TODO: Extract from socket via getpeername()
   env["REQUEST_URI"] = uri;
+
+  // Step 5b: Server identification (CGI/1.1 spec)
+  // TODO: Extract actual values from ServerConfig when available
+  env["SERVER_NAME"] = "localhost";
+  env["SERVER_PORT"] = "8080";  // TODO: Get from listening socket
 
   // Step 6: HTTP Request Headers as HTTP_* variables
 
