@@ -99,9 +99,6 @@ CgiProcess* CgiExecutor::executeAsync(const HttpRequest& request,
     close(pipe_out[0]);
     close(pipe_out[1]);
 
-    // Set alarm for timeout (5 seconds)
-    // alarm(5); // FORBIDDEN: managed by parent process via timestamp check
-
     // Extract script directory and filename
     std::string script_dir = ".";
     std::string script_name = script_path;

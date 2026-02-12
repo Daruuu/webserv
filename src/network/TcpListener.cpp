@@ -2,6 +2,7 @@
 
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <strings.h>
 #include <sys/socket.h>
@@ -12,11 +13,10 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 
 #include "common/StringUtils.hpp"
-#include <sstream>
-#include <netdb.h> 
 
 TcpListener::TcpListener(const std::string& host, int port)
     : socket_fd_(-1), port_(port), host_(host) {
@@ -178,14 +178,15 @@ void TcpListener::setSocketOptions() {
 /// @throws std::runtime_error if bind() fails
 void TcpListener::bindSocket() {
   struct addrinfo hints;
-  struct addrinfo* result; // will point to a linked list of addrinfo structures
+  struct addrinfo*
+      result;  // will point to a linked list of addrinfo structures
   struct addrinfo* rp;
   int s;
 
   std::memset(&hints, 0, sizeof(struct addrinfo));
-  hints.ai_family = AF_INET;       // Allow IPv4 only (compatible with socket())
-  hints.ai_socktype = SOCK_STREAM; // TCP socket
-  hints.ai_flags = AI_PASSIVE;     // For wildcard IP address if host is null/empty
+  hints.ai_family = AF_INET;  // Allow IPv4 only (compatible with socket())
+  hints.ai_socktype = SOCK_STREAM;  // TCP socket
+  hints.ai_flags = AI_PASSIVE;  // For wildcard IP address if host is null/empty
 
   const char* host_ptr = host_.empty() ? NULL : host_.c_str();
   std::string port_str = string_utils::toString(port_);
@@ -193,7 +194,8 @@ void TcpListener::bindSocket() {
   s = getaddrinfo(host_ptr, port_str.c_str(), &hints, &result);
   if (s != 0) {
     close(socket_fd_);
-    throw std::runtime_error("getaddrinfo failed: " + std::string(gai_strerror(s)));
+    throw std::runtime_error("getaddrinfo failed: " +
+                             std::string(gai_strerror(s)));
   }
 
   // getaddrinfo() returns a list of address structures.
@@ -202,11 +204,11 @@ void TcpListener::bindSocket() {
 
   for (rp = result; rp != NULL; rp = rp->ai_next) {
     if (bind(socket_fd_, rp->ai_addr, rp->ai_addrlen) == 0) {
-       break; // Success :)
+      break;  // Success :)
     }
   }
 
-  if (rp == NULL) { // No address succeeded
+  if (rp == NULL) {  // No address succeeded
     freeaddrinfo(result);
     close(socket_fd_);
     throw std::runtime_error("Failed to bind socket to " +
@@ -215,8 +217,8 @@ void TcpListener::bindSocket() {
 
   freeaddrinfo(result);
 
-  std::cout << "Socket bound to " << (host_.empty() ? "0.0.0.0" : host_) 
-            << ":" << port_ << std::endl;
+  std::cout << "Socket bound to " << (host_.empty() ? "0.0.0.0" : host_) << ":"
+            << port_ << std::endl;
 }
 
 /// Activates listening mode on the socket, enabling it to accept connections.
@@ -422,8 +424,8 @@ int TcpListener::acceptConnection() {
   // Manual IP formatting to replace inet_ntop (forbidden)
   unsigned char* ip_bytes = (unsigned char*)&client_addr.sin_addr;
   std::ostringstream oss;
-  oss << (int)ip_bytes[0] << "." << (int)ip_bytes[1] << "." 
-      << (int)ip_bytes[2] << "." << (int)ip_bytes[3];
+  oss << (int)ip_bytes[0] << "." << (int)ip_bytes[1] << "." << (int)ip_bytes[2]
+      << "." << (int)ip_bytes[3];
   std::string client_ip = oss.str();
   std::cout << "New connection from " << client_ip << ":"
             << ntohs(client_addr.sin_port) << " (fd: " << client_fd << ")"
