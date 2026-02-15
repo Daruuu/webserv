@@ -41,8 +41,19 @@ struct PendingResponse {
 //   - Cuando hay request completa → RequestProcessor → HttpResponse
 //   - Encolar y enviar respuestas (send)
 // -----------------------------------------------------------------------------
+  // Invocado cuando el parser marca una HttpRequest como completa.
+  bool handleCompleteRequest();
+  void enqueueResponse(const std::vector<char>& data, bool closeAfter);
+  void handleExpect100();
+  bool startCgiIfNeeded(const HttpRequest& request);
+
+  void finalizeCgiResponse();
+  void processRequests();
 
 class Client {
+  // Saved request state for CGI
+  bool _savedShouldClose;
+  HttpVersion _savedVersion;
  public:
   // ---- Constructor y destructor ----
   Client(int fd, const std::vector<ServerConfig>* configs, int listenPort);

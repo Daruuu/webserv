@@ -1,14 +1,3 @@
-/**
- * Client.cpp - Gestión de una conexión TCP con un cliente HTTP
- *
- * FLUJO GENERAL (para entender el archivo):
- * 1. Epoll detecta EPOLLIN  → handleRead()  (cliente envía datos)
- * 2. Epoll detecta EPOLLOUT → handleWrite() (podemos enviar al cliente)
- *
- * handleRead: recv() → parser.consume() → si request completa → buildResponse → enqueue
- * handleWrite: send() desde _outBuffer, o sacar siguiente de la cola
- */
-
 #include "Client.hpp"
 #include "RequestProcessorUtils.hpp"
 
@@ -80,9 +69,12 @@ Client::Client(int fd, const std::vector<ServerConfig>* configs, int listenPort)
       _lastActivity(std::time(0)),
       _serverManager(0),
       _cgiProcess(0),
+
       _closeAfterWrite(false),
       _sent100Continue(false),
-      _responseQueue() {
+      _responseQueue(),
+      _savedShouldClose(false),
+      _savedVersion(HTTP_VERSION_1_1) {
   const ServerConfig* server = selectServerByPort(listenPort, configs);
   if (server) _parser.setMaxBodySize(server->getMaxBodySize());
 }
@@ -120,15 +112,7 @@ void Client::handleRead() {
     // 3) Expect: 100-continue (respuesta intermedia si el cliente la espera)
     handleExpect100();
 
-    // 4) Procesar todas las requests completadas (Keep-Alive puede traer varias)
-    while (_parser.getState() == COMPLETE) {
-      bool shouldClose = handleCompleteRequest();
-      if (_cgiProcess) return;
-      if (shouldClose) return;
-      _parser.reset();
-      _sent100Continue = false;
-      _parser.consume("");
-    }
+    processRequests();
 
     // 5) Si el parser marcó error, construir y enviar respuesta de error
     if (_parser.getState() == ERROR) {
@@ -141,6 +125,43 @@ void Client::handleRead() {
     _state = STATE_CLOSED;  // Error en recv
   }
 }
+
+void Client::processRequests() {
+  while (_parser.getState() == COMPLETE) {
+    // If a CGI process is running, we cannot start another one or process
+    // responses yet. We just wait (parser buffer holds next request).
+    if (_cgiProcess) return;
+
+    bool shouldClose = handleCompleteRequest();
+
+    // If CGI started, handleCompleteRequest returned true (and set _cgiProcess).
+    // The parser holds the request that started the CGI. We must reset it
+    // so we can parse the *next* request (if any) later.
+    // BUT we must have saved the necessary info from the request first
+    // (done in startCgiIfNeeded).
+    if (_cgiProcess) {
+       _response.clear();
+       _parser.reset();
+       return;
+    }
+
+    if (shouldClose) return;
+    _response.clear();
+    _parser.reset();
+    _sent100Continue = false;
+    _parser.consume("");
+  }
+}
+
+
+
+// ============================
+// ESCRITURA AL SOCKET (EPOLLOUT)
+// ============================
+// - Intenta enviar parte de _outBuffer con send().
+// - Borra del buffer lo que se haya enviado.
+// - Si termina y hay mas respuestas en cola, las saca una a una.
+// - Si no hay nada mas y no hay que cerrar, vuelve a STATE_IDLE.
 
 void Client::handleWrite() {
   if (_outBuffer.empty()) return;
