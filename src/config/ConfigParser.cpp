@@ -486,8 +486,9 @@ void ConfigParser::parseLocationBlock(ServerConfig& server,
       }
       loc.setAutoIndex(val == config::section::autoindex_on);
     } else if (directive == config::section::methods ||
-               directive == config::section::allow_methods ||
-               directive == config::section::limit_except) {
+               directive == config::section::allow_methods) {
+      // Lista positiva: solo los métodos listados están permitidos.
+      // No soportamos limit_except (lógica negativa de NGINX).
       for (size_t i = 1; i < locTokens.size(); ++i) {
         std::string method = config::utils::removeSemicolon(locTokens[i]);
         if (!config::utils::isValidHttpMethod(method)) {
