@@ -31,7 +31,6 @@ class LocationConfig {
 
   // Setters
   void setPath(const std::string& path);
-
   void setRoot(const std::string& root);
   void addIndex(const std::string& index);
   void addMethod(const std::string& method);

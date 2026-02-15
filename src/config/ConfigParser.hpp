@@ -60,6 +60,4 @@ class ConfigParser {
   ServerConfig parseSingleServerBlock(const std::string& blockContent);
 };
 
-// ostream
-
 #endif  // WEBSERV_CONFIGPARSER_HPP

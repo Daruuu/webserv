@@ -11,7 +11,6 @@
 
 /**
  * ServerConfig stores configuration for one server { } block
- *
  * Corresponds to nginx-like config:
  * server {
  *     listen 8080;
