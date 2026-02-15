@@ -50,7 +50,6 @@ std::vector<char> renderAutoindexHtml(const std::string& base,
        << "    .autoindex-list li{padding:0.35rem 0;border-bottom:1px solid #1a1a2e}\n"
        << "    .autoindex-list a{color:#00f5ff}\n"
        << "    .autoindex-list a:hover{color:#39ff14;text-shadow:0 0 8px rgba(0,245,255,0.5)}\n"
-       << "    .autoindex-list .dir::before{content:'[DIR] ';color:#ffbf00}\n"
        << "    .rays-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:1rem;margin-top:0.8rem}\n"
        << "    .rays-gallery .ray-img{display:flex;flex-direction:column;align-items:center;padding:0.5rem;border:1px solid #39ff14;border-radius:4px;background:rgba(57,255,20,0.05);border-bottom:none}\n"
        << "    .rays-gallery .ray-img a{display:block}\n"

@@ -61,7 +61,8 @@ void RequestProcessor::process(const HttpRequest& request,
         isCgiRequest(resolvedPath) || isCgiRequestByConfig(location, resolvedPath);
 
     if (isCgi) {
-      //TODO: Implementar CGI de momento ponemos 501
+      // CGI: manejado por Client::startCgiIfNeeded (CgiExecutor).
+      // Si llegamos aquí, no hay location con cgi configurado para esta ruta.
       buildErrorResponse(response, request, 501, true, server);
       return;
     }
