@@ -396,21 +396,22 @@ bool isValidLocationPath(const std::string& path) {
   return true;
 }
 
-// Validates HTTP method against whitelist (GET, POST, DELETE only)
 bool isValidHttpMethod(const std::string& method) {
-  return (method == "GET" || method == "POST" || method == "DELETE");
+  return (method == config::section::method_get || method == config::section::method_post || method == config::section::method_delete || method == config::section::method_head);
 }
 
-// Checks if a root path exists and is accessible.
-// Returns empty string if OK, warning message if not.
-// Following NGINX behavior: warns but does not fail at startup.
+/**
+ * Checks if a root path exists and is accessible.
+ * Returns empty string if OK, warning message if not.
+ * Following NGINX behavior: warns but does not fail at startup.
+*/
 std::string checkRootPath(const std::string& path) {
   if (path.empty()) {
     return config::errors::root_path_warning + ": path is empty";
   }
 
   // Use stat to check if path exists and is a directory
-  struct stat info;
+  struct stat info = {};
   if (stat(path.c_str(), &info) != 0) {
     return config::errors::root_path_warning + ": " + path + " does not exist";
   }
@@ -423,16 +424,18 @@ std::string checkRootPath(const std::string& path) {
   return "";
 }
 
-// Ensures upload store path exists, creating it if necessary.
-// Throws ConfigException if creation fails.
-// Following NGINX behavior: creates directory or fails at startup.
+/**
+ * Ensures upload store path exists, creating it if necessary.
+ * Throws ConfigException if creation fails.
+ * Following NGINX behavior: creates directory or fails at startup.
+*/
 void ensureUploadStorePath(const std::string& path) {
   if (path.empty()) {
     throw ConfigException(config::errors::upload_store_creation_failed +
                           ": path is empty");
   }
 
-  struct stat info;
+  struct stat info = {};
   if (stat(path.c_str(), &info) == 0) {
     if (!(info.st_mode & S_IFDIR)) {
       throw ConfigException(config::errors::upload_store_creation_failed +
