@@ -61,7 +61,7 @@ void RequestProcessor::process(const HttpRequest& request,
         isCgiRequest(resolvedPath) || isCgiRequestByConfig(location, resolvedPath);
 
     if (isCgi) {
-      // CGI no implementado aún -> 501
+      //TODO: Implementar CGI de momento ponemos 501
       buildErrorResponse(response, request, 501, true, server);
       return;
     }
