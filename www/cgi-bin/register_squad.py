@@ -45,7 +45,7 @@ print("""<!DOCTYPE html>
             <a href="/upload.html">LOAD LASER</a>
             <a href="/about.html">THE SQUAD</a>
             <a href="/target-list.html">TARGET LIST</a>
-            <a href="/images/">TACTICAL SCANNER</a>
+            <a href="/cgi-bin/list_images.py">TACTICAL SCANNER</a>
         </nav>
         <main class="panel">
             <h2>Escuadrones registrados — Rayos en el sistema</h2>
