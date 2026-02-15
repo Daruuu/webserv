@@ -65,7 +65,7 @@ bool Client::startCgiIfNeeded(const HttpRequest& request) {
   }
 
   CgiExecutor exec;
-  _cgiProcess = exec.executeAsync(request, scriptPath, interpreterPath);
+  _cgiProcess = exec.executeAsync(request, scriptPath, interpreterPath, *server);
   if (_cgiProcess == 0) {
     buildErrorResponse(_response, request, 500, true, server);
     return true;

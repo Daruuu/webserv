@@ -20,9 +20,9 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
-#include <cerrno>
 #include <cstring>
 #include <iostream>
 #include <sstream>
@@ -45,7 +45,8 @@ CgiExecutor::~CgiExecutor() {}
 
 CgiProcess* CgiExecutor::executeAsync(const HttpRequest& request,
                                       const std::string& script_path,
-                                      const std::string& interpreter_path) {
+                                      const std::string& interpreter_path,
+                                      const ServerConfig& serverConfig) {
   // Step 1: Create communication pipes
   // pipe_in: parent writes request body to child stdin
   // pipe_out: parent reads CGI output from child stdout
@@ -117,32 +118,40 @@ CgiProcess* CgiExecutor::executeAsync(const HttpRequest& request,
     // Prepare environment variables
     // INFO: Use full path for SCRIPT_FILENAME env var
     std::map<std::string, std::string> env_map =
-        prepareEnvironment(request, script_path);
+        prepareEnvironment(request, script_path, serverConfig);
+#ifdef DEBUG
+    std::cout << "[CGI ENV] script=" << script_path << std::endl;
+    for (std::map<std::string, std::string>::const_iterator it =
+             env_map.begin();
+         it != env_map.end(); ++it) {
+      std::cerr << "[CGI ENV] " << it->first << "=" << it->second << std::endl;
+    }
+#endif
     char** envp = createEnvArray(env_map);
 
     // Prepare arguments - use just the script filename after chdir
     // Prefix with ./ for relative paths to work with /usr/bin/env and direct
     // execution
     std::string relative_script = "./" + script_name;
-    // Manual copy of arguments to avoid strdup (forbidden)
-    // We use a vector to hold the allocated pointers so we can track them if needed,
-    // though in a successful execve they are replaced, and on failure we kill the process.
-    // But strictly speaking, we just need to allocate writable memory.
-    
+    // We use a vector to hold the allocated pointers so we can track them if
+    // needed, though in a successful execve they are replaced, and on failure
+    // we kill the process. so we do not need to delete them manually since the
+    // process will wipe memory it self
+
     char* args[3];
     args[0] = NULL;
     args[1] = NULL;
     args[2] = NULL;
 
     if (!interpreter_path.empty()) {
-        args[0] = new char[interpreter_path.size() + 1];
-        std::strcpy(args[0], interpreter_path.c_str());
-        
-        args[1] = new char[relative_script.size() + 1];
-        std::strcpy(args[1], relative_script.c_str());
+      args[0] = new char[interpreter_path.size() + 1];
+      std::strcpy(args[0], interpreter_path.c_str());
+
+      args[1] = new char[relative_script.size() + 1];
+      std::strcpy(args[1], relative_script.c_str());
     } else {
-        args[0] = new char[relative_script.size() + 1];
-        std::strcpy(args[0], relative_script.c_str());
+      args[0] = new char[relative_script.size() + 1];
+      std::strcpy(args[0], relative_script.c_str());
     }
 
     const char* exec_path = args[0];
@@ -178,7 +187,8 @@ CgiProcess* CgiExecutor::executeAsync(const HttpRequest& request,
 }
 
 std::map<std::string, std::string> CgiExecutor::prepareEnvironment(
-    const HttpRequest& request, const std::string& script_path) {
+    const HttpRequest& request, const std::string& script_path,
+    const ServerConfig& serverConfig) {
   std::map<std::string, std::string> env;
 
   // Step 1: Core CGI/HTTP Variables
@@ -226,9 +236,14 @@ std::map<std::string, std::string> CgiExecutor::prepareEnvironment(
   env["REQUEST_URI"] = uri;
 
   // Step 5b: Server identification (CGI/1.1 spec)
-  // TODO: Extract actual values from ServerConfig when available
-  env["SERVER_NAME"] = "localhost";
-  env["SERVER_PORT"] = "8080";  // TODO: Get from listening socket
+  env["SERVER_NAME"] = serverConfig.getServerName();
+  std::ostringstream port_ss;
+  port_ss << serverConfig.getPort();
+  env["SERVER_PORT"] = port_ss.str();
+  env["PATH_INFO"] =
+      request.getPath();  // We only support direct script execution for now
+  env["PATH_TRANSLATED"] = "";     // Corresponding physical path
+  env["REDIRECT_STATUS"] = "200";  // Required by php-cgi in some setups
 
   // Step 6: HTTP Request Headers as HTTP_* variables
 
