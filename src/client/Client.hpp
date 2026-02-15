@@ -41,14 +41,6 @@ struct PendingResponse {
 //   - Cuando hay request completa → RequestProcessor → HttpResponse
 //   - Encolar y enviar respuestas (send)
 // -----------------------------------------------------------------------------
-  // Invocado cuando el parser marca una HttpRequest como completa.
-  bool handleCompleteRequest();
-  void enqueueResponse(const std::vector<char>& data, bool closeAfter);
-  void handleExpect100();
-  bool startCgiIfNeeded(const HttpRequest& request);
-
-  void finalizeCgiResponse();
-  void processRequests();
 
 class Client {
   // Saved request state for CGI
@@ -66,11 +58,7 @@ class Client {
   bool hasPendingData() const;
   time_t getLastActivity() const;
 
-  // ---- Manejo de eventos (llamados desde epoll) ----
-  void handleRead();   // EPOLLIN: hay datos para leer
-  void handleWrite(); // EPOLLOUT: se puede escribir
-  void handleCgiPipe(int pipe_fd, size_t events);
-  void setServerManager(ServerManager* serverManager);
+
 
   // ---- Construcción de respuesta (llamado internamente) ----
   void buildResponse();
@@ -110,6 +98,15 @@ class Client {
   void handleExpect100();  // Expect: 100-continue
   bool startCgiIfNeeded(const HttpRequest& request);
   void finalizeCgiResponse();
+
+	// ---- Manejo de eventos (llamados desde epoll) ----
+	void handleRead();   // EPOLLIN: hay datos para leer
+	void handleWrite(); // EPOLLOUT: se puede escribir
+	void handleCgiPipe(int pipe_fd, size_t events);
+	void setServerManager(ServerManager* serverManager);
+
+	// Invocado cuando el parser marca una HttpRequest como completa.
+	void processRequests();
 };
 
 #endif  // CLIENT_HPP

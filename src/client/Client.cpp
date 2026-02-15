@@ -58,23 +58,21 @@ bool Client::handleCompleteRequest() {
 // =============================================================================
 
 Client::Client(int fd, const std::vector<ServerConfig>* configs, int listenPort)
-    : _fd(fd),
-      _outBuffer(),
-      _parser(),
-      _response(),
-      _processor(),
-      _configs(configs),
+    : _savedShouldClose(false),
+      _savedVersion(HTTP_VERSION_1_1),
+      _fd(fd),
       _listenPort(listenPort),
+      _configs(configs),
       _state(STATE_IDLE),
       _lastActivity(std::time(0)),
+      _outBuffer(),
+      _responseQueue(),
+      _parser(),
+      _response(),
       _serverManager(0),
       _cgiProcess(0),
-
       _closeAfterWrite(false),
-      _sent100Continue(false),
-      _responseQueue(),
-      _savedShouldClose(false),
-      _savedVersion(HTTP_VERSION_1_1) {
+      _sent100Continue(false) {
   const ServerConfig* server = selectServerByPort(listenPort, configs);
   if (server) _parser.setMaxBodySize(server->getMaxBodySize());
 }
