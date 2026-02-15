@@ -1,4 +1,5 @@
 #include "Client.hpp"
+#include "ErrorUtils.hpp"
 #include "RequestProcessorUtils.hpp"
 
 #include <sys/socket.h>
@@ -32,11 +33,16 @@ void Client::enqueueResponse(const std::vector<char>& data, bool closeAfter) {
 }
 
 void Client::buildResponse() {
-  // Construye la HttpResponse: CGI o contenido estático (RequestProcessor)
   const HttpRequest& request = _parser.getRequest();
-  if (startCgiIfNeeded(request)) return;
-  _processor.process(request, _configs, _listenPort,
-                     _parser.getErrorStatusCode(), _response);
+  bool handled = _processor.process(request, _configs, _listenPort,
+                                    _parser.getErrorStatusCode(), _response);
+  if (!handled) {
+    // process() devolvió false: es CGI, ejecutar CgiExecutor
+    if (startCgiIfNeeded(request)) return;
+    // No se pudo ejecutar CGI (sin config o fallo) → 501
+    const ServerConfig* server = selectServerByPort(_listenPort, _configs);
+    buildErrorResponse(_response, request, 501, true, server);
+  }
 }
 
 bool Client::handleCompleteRequest() {
